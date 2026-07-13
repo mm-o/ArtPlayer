@@ -545,7 +545,7 @@ const retriedFetch = async (fetchFn, url, requestInit, getRetryDelay, shouldStop
       if (retryDelayInSeconds === null) {
         throw error;
       }
-      console.error("Retrying failed fetch. Error:", error);
+      Logging._error("Retrying failed fetch. Error:", error);
       if (!Number.isFinite(retryDelayInSeconds) || retryDelayInSeconds < 0) {
         throw new TypeError("Retry delay must be a non-negative finite number.");
       }
@@ -746,7 +746,7 @@ class EventEmitter {
   constructor() {
     this._listeners = /* @__PURE__ */ new Map();
   }
-  /** Registers a listener for the given event. */
+  /** Registers a listener for the given event. Returns a function that, when called, removes the listener again. */
   on(event, listener, options) {
     if (!this._listeners.has(event)) {
       this._listeners.set(event, /* @__PURE__ */ new Set());
@@ -776,6 +776,58 @@ class EventEmitter {
     }
   }
 }
+var LogLevel;
+(function(LogLevel2) {
+  LogLevel2[LogLevel2["Silent"] = 0] = "Silent";
+  LogLevel2[LogLevel2["Errors"] = 1] = "Errors";
+  LogLevel2[LogLevel2["Warnings"] = 2] = "Warnings";
+  LogLevel2[LogLevel2["Info"] = 3] = "Info";
+})(LogLevel || (LogLevel = {}));
+class Logging {
+  constructor() {
+  }
+  /** The current log level. Defaults to {@link LogLevel.Info}. */
+  static get level() {
+    return Logging._level;
+  }
+  static set level(value) {
+    if (value !== LogLevel.Silent && value !== LogLevel.Errors && value !== LogLevel.Warnings && value !== LogLevel.Info) {
+      throw new TypeError("Invalid log level. Use one of the values of the LogLevel enum.");
+    }
+    Logging._level = value;
+  }
+  /** @internal */
+  static get _emitter() {
+    return Logging._emitterInstance ?? (Logging._emitterInstance = new EventEmitter());
+  }
+  /** Registers a listener for a log event. Returns a function that, when called, removes the listener again. */
+  static on(event, listener, options) {
+    return Logging._emitter.on(event, listener, options);
+  }
+  /** @internal */
+  static _error(...args) {
+    Logging._emitter._emit("error", args);
+    if (Logging._level >= LogLevel.Errors) {
+      console.error(...args);
+    }
+  }
+  /** @internal */
+  static _warn(...args) {
+    Logging._emitter._emit("warn", args);
+    if (Logging._level >= LogLevel.Warnings) {
+      console.warn(...args);
+    }
+  }
+  /** @internal */
+  static _info(...args) {
+    Logging._emitter._emit("info", args);
+    if (Logging._level >= LogLevel.Info) {
+      console.info(...args);
+    }
+  }
+}
+Logging._level = LogLevel.Info;
+Logging._emitterInstance = null;
 class RichImageData {
   /** Creates a new {@link RichImageData}. */
   constructor(data, mimeType) {
@@ -931,7 +983,8 @@ const VIDEO_CODECS = [
   "hevc",
   "vp9",
   "av1",
-  "vp8"
+  "vp8",
+  "prores"
 ];
 const PCM_AUDIO_CODECS = [
   "pcm-s16",
@@ -1035,8 +1088,22 @@ const VP9_LEVEL_TABLE = [
 ];
 const VP9_DEFAULT_SUFFIX = ".01.01.01.01.00";
 const AV1_DEFAULT_SUFFIX = ".0.110.01.01.01.0";
+const PRORES_FOURCCS = [
+  "ap4x",
+  // ProRes 4444 XQ
+  "ap4h",
+  // ProRes 4444
+  "apch",
+  // ProRes 422 High Quality
+  "apcn",
+  // ProRes 422 Standard Definition
+  "apcs",
+  // ProRes 422 LT
+  "apco"
+  // ProRes 422 Proxy
+];
 const extractVideoCodecString = (trackInfo) => {
-  const { codec, codecDescription, colorSpace, avcCodecInfo, hevcCodecInfo, vp9CodecInfo, av1CodecInfo } = trackInfo;
+  const { codec, codecDescription, colorSpace, avcCodecInfo, hevcCodecInfo, vp9CodecInfo, av1CodecInfo, proresFormat } = trackInfo;
   if (codec === "avc") {
     assert(trackInfo.avcType !== null);
     if (avcCodecInfo) {
@@ -1156,6 +1223,10 @@ const extractVideoCodecString = (trackInfo) => {
       string = string.slice(0, -AV1_DEFAULT_SUFFIX.length);
     }
     return string;
+  } else if (codec === "prores") {
+    return proresFormat ?? "apch";
+  } else if (codec !== null) {
+    assertNever(codec);
   }
   throw new TypeError(`Unhandled codec '${codec}'.`);
 };
@@ -1195,7 +1266,7 @@ const extractAudioCodecString = (trackInfo) => {
   throw new TypeError(`Unhandled codec '${codec}'.`);
 };
 const OPUS_SAMPLE_RATE = 48e3;
-const PCM_CODEC_REGEX = /^pcm-([usf])(\d+)+(be)?$/;
+const PCM_CODEC_REGEX = /^pcm-([usf])(\d+)(be)?$/;
 const parsePcmCodec = (codec) => {
   assert(PCM_AUDIO_CODECS.includes(codec));
   if (codec === "ulaw") {
@@ -1229,6 +1300,8 @@ const inferCodecFromCodecString = (codecString) => {
     return "vp9";
   } else if (codecString.startsWith("av01")) {
     return "av1";
+  } else if (PRORES_FOURCCS.includes(codecString)) {
+    return "prores";
   }
   if (codecString === "mp3" || codecString === "mp4a.69" || codecString === "mp4a.6B" || codecString === "mp4a.6b" || codecString === "mp4a.40.34") {
     return "mp3";
@@ -1256,7 +1329,7 @@ const inferCodecFromCodecString = (codecString) => {
   }
   return null;
 };
-const FRAME_HEADER_SIZE = 4;
+const MP3_FRAME_HEADER_SIZE = 4;
 const SAMPLING_RATES = [44100, 48e3, 32e3];
 const KILOBIT_RATES = [
   // lowSamplingFrequency === 0
@@ -1517,6 +1590,9 @@ var XingFlags;
   XingFlags2[XingFlags2["FileSize"] = 2] = "FileSize";
   XingFlags2[XingFlags2["Toc"] = 4] = "Toc";
 })(XingFlags || (XingFlags = {}));
+const getMp3ChannelCount = (channel) => {
+  return channel === 3 ? 1 : 2;
+};
 const AC3_SAMPLE_RATES = [48e3, 44100, 32e3];
 const EAC3_REDUCED_SAMPLE_RATES = [24e3, 22050, 16e3];
 var AvcNalUnitType;
@@ -1719,7 +1795,7 @@ const extractAvcDecoderConfigurationRecord = (packetData) => {
       sequenceParameterSetExt: hasExtendedData ? spsExtUnits : null
     };
   } catch (error) {
-    console.error("Error building AVC Decoder Configuration Record:", error);
+    Logging._error("Error building AVC Decoder Configuration Record:", error);
     return null;
   }
 };
@@ -1780,7 +1856,7 @@ const deserializeAvcDecoderConfigurationRecord = (data) => {
     }
     return record;
   } catch (error) {
-    console.error("Error deserializing AVC Decoder Configuration Record:", error);
+    Logging._error("Error deserializing AVC Decoder Configuration Record:", error);
     return null;
   }
 };
@@ -2004,7 +2080,7 @@ const parseAvcSps = (sps) => {
       maxDecFrameBuffering
     };
   } catch (error) {
-    console.error("Error parsing AVC SPS:", error);
+    Logging._error("Error parsing AVC SPS:", error);
     return null;
   }
 };
@@ -2161,7 +2237,7 @@ const parseHevcSps = (sps) => {
       minSpatialSegmentationIdc
     };
   } catch (error) {
-    console.error("Error parsing HEVC SPS:", error);
+    Logging._error("Error parsing HEVC SPS:", error);
     return null;
   }
 };
@@ -2278,7 +2354,7 @@ const extractHevcDecoderConfigurationRecord = (packetData) => {
     };
     return record;
   } catch (error) {
-    console.error("Error building HEVC Decoder Configuration Record:", error);
+    Logging._error("Error building HEVC Decoder Configuration Record:", error);
     return null;
   }
 };
@@ -3101,6 +3177,9 @@ const determineVideoPacketType = (codec, decoderConfig, packetData) => {
         }
       }
       return null;
+    }
+    case "prores": {
+      return "key";
     }
     default: {
       assertNever(codec);
@@ -4445,7 +4524,7 @@ class IsobmffDemuxer extends Demuxer {
               continue;
             }
             if (relevantEntryFound) {
-              console.warn("Unsupported edit list: multiple edits are not currently supported. Only using first edit.");
+              Logging._warn("Unsupported edit list: multiple edits are not currently supported. Only using first edit.");
               break;
             }
             if (mediaTime === -1) {
@@ -4453,7 +4532,7 @@ class IsobmffDemuxer extends Demuxer {
               continue;
             }
             if (mediaRate !== 1) {
-              console.warn("Unsupported edit list entry: media rate must be 1.");
+              Logging._warn("Unsupported edit list entry: media rate must be 1.");
               break;
             }
             track.editListPreviousSegmentDurations = previousSegmentDurations;
@@ -4514,7 +4593,8 @@ class IsobmffDemuxer extends Demuxer {
               avcCodecInfo: null,
               hevcCodecInfo: null,
               vp9CodecInfo: null,
-              av1CodecInfo: null
+              av1CodecInfo: null,
+              proresFormat: null
             };
           } else if (handlerType === "soun") {
             track.info = {
@@ -4582,10 +4662,13 @@ class IsobmffDemuxer extends Demuxer {
                 track.info.codec = "vp9";
               } else if (codecName === "av01") {
                 track.info.codec = "av1";
+              } else if (PRORES_FOURCCS.includes(lowercaseBoxName)) {
+                track.info.codec = "prores";
+                track.info.proresFormat = lowercaseBoxName;
               } else if (codecName === null) {
-                console.warn(`Unknown encrypted video codec due to missing frma box.`);
+                Logging._warn(`Unknown encrypted video codec due to missing frma box.`);
               } else {
-                console.warn(`Unsupported video codec (sample entry type '${sampleBoxInfo.name}').`);
+                Logging._warn(`Unsupported video codec (sample entry type '${sampleBoxInfo.name}').`);
               }
             } else {
               slice.skip(6 * 1 + 2);
@@ -4637,7 +4720,7 @@ class IsobmffDemuxer extends Demuxer {
                 } else if (sampleSize === 16) {
                   track.info.codec = track.info.pcmLittleEndian ? "pcm-s16" : "pcm-s16be";
                 } else {
-                  console.warn(`Unsupported sample size ${sampleSize} for codec 'twos'.`);
+                  Logging._warn(`Unsupported sample size ${sampleSize} for codec 'twos'.`);
                   track.info.codec = null;
                 }
               } else if (codecName === "sowt") {
@@ -4646,7 +4729,7 @@ class IsobmffDemuxer extends Demuxer {
                 } else if (sampleSize === 16) {
                   track.info.codec = "pcm-s16";
                 } else {
-                  console.warn(`Unsupported sample size ${sampleSize} for codec 'sowt'.`);
+                  Logging._warn(`Unsupported sample size ${sampleSize} for codec 'sowt'.`);
                   track.info.codec = null;
                 }
               } else if (codecName === "raw ") {
@@ -4669,7 +4752,7 @@ class IsobmffDemuxer extends Demuxer {
                   } else if (pcmSampleSize === 32) {
                     track.info.codec = "pcm-s32";
                   } else {
-                    console.warn(`Invalid ipcm sample size ${pcmSampleSize}.`);
+                    Logging._warn(`Invalid ipcm sample size ${pcmSampleSize}.`);
                     track.info.codec = null;
                   }
                 } else {
@@ -4680,7 +4763,7 @@ class IsobmffDemuxer extends Demuxer {
                   } else if (pcmSampleSize === 32) {
                     track.info.codec = "pcm-s32be";
                   } else {
-                    console.warn(`Invalid ipcm sample size ${pcmSampleSize}.`);
+                    Logging._warn(`Invalid ipcm sample size ${pcmSampleSize}.`);
                     track.info.codec = null;
                   }
                 }
@@ -4692,7 +4775,7 @@ class IsobmffDemuxer extends Demuxer {
                   } else if (pcmSampleSize === 64) {
                     track.info.codec = "pcm-f64";
                   } else {
-                    console.warn(`Invalid fpcm sample size ${pcmSampleSize}.`);
+                    Logging._warn(`Invalid fpcm sample size ${pcmSampleSize}.`);
                     track.info.codec = null;
                   }
                 } else {
@@ -4701,7 +4784,7 @@ class IsobmffDemuxer extends Demuxer {
                   } else if (pcmSampleSize === 64) {
                     track.info.codec = "pcm-f64be";
                   } else {
-                    console.warn(`Invalid fpcm sample size ${pcmSampleSize}.`);
+                    Logging._warn(`Invalid fpcm sample size ${pcmSampleSize}.`);
                     track.info.codec = null;
                   }
                 }
@@ -4734,12 +4817,12 @@ class IsobmffDemuxer extends Demuxer {
                   }
                 }
                 if (track.info.codec === null) {
-                  console.warn("Unsupported PCM format.");
+                  Logging._warn("Unsupported PCM format.");
                 }
               } else if (codecName === null) {
-                console.warn(`Unknown encrypted audio codec due to missing frma box.`);
+                Logging._warn(`Unknown encrypted audio codec due to missing frma box.`);
               } else {
-                console.warn(`Unsupported audio codec (sample entry type '${sampleBoxInfo.name}').`);
+                Logging._warn(`Unsupported audio codec (sample entry type '${sampleBoxInfo.name}').`);
               }
             }
             slice.filePos = sampleBoxStartPos + sampleBoxInfo.totalSize;
@@ -4776,7 +4859,7 @@ class IsobmffDemuxer extends Demuxer {
               defaultSkipByteBlock: null
             };
           } else {
-            console.warn(`Unsupported encryption scheme '${schemeType}'.`);
+            Logging._warn(`Unsupported encryption scheme '${schemeType}'.`);
           }
         }
         break;
@@ -4897,18 +4980,21 @@ class IsobmffDemuxer extends Demuxer {
           }
           assert(track.info?.type === "video");
           const colourType = readAscii(slice, 4);
-          if (colourType !== "nclx") {
+          if (colourType !== "nclx" && colourType !== "nclc") {
             break;
           }
           const colourPrimaries = readU16Be(slice);
           const transferCharacteristics = readU16Be(slice);
           const matrixCoefficients = readU16Be(slice);
-          const fullRangeFlag = Boolean(readU8(slice) & 128);
+          let fullRange = void 0;
+          if (colourType === "nclx") {
+            fullRange = Boolean(readU8(slice) & 128);
+          }
           track.info.colorSpace = {
             primaries: COLOR_PRIMARIES_MAP_INVERSE[colourPrimaries],
             transfer: TRANSFER_CHARACTERISTICS_MAP_INVERSE[transferCharacteristics],
             matrix: MATRIX_COEFFICIENTS_MAP_INVERSE[matrixCoefficients],
-            fullRange: fullRangeFlag
+            fullRange
           };
         }
         break;
@@ -4977,7 +5063,7 @@ class IsobmffDemuxer extends Demuxer {
           } else if (objectTypeIndication === 221) {
             track.info.codec = "vorbis";
           } else {
-            console.warn(`Unsupported audio codec (objectTypeIndication ${objectTypeIndication}) - discarding track.`);
+            Logging._warn(`Unsupported audio codec (objectTypeIndication ${objectTypeIndication}) - discarding track.`);
           }
           slice.skip(1 + 3 + 4 + 4);
           if (decoderConfigDescriptorLength > slice.filePos - payloadStart) {
@@ -5123,7 +5209,7 @@ class IsobmffDemuxer extends Demuxer {
           const bytes = readBytes(slice, boxInfo.contentSize);
           const config = parseEac3Config(bytes);
           if (!config) {
-            console.warn("Invalid dec3 box contents, ignoring.");
+            Logging._warn("Invalid dec3 box contents, ignoring.");
             break;
           }
           const sampleRate = getEac3SampleRate(config);
@@ -5406,8 +5492,11 @@ class IsobmffDemuxer extends Demuxer {
           this.readContiguousBoxes(slice.slice(contentStartPos, boxInfo.contentSize));
           if (this.currentTrack) {
             const trackData = this.currentFragment.trackData.get(this.currentTrack.id);
-            if (trackData) {
-              this.currentFragment.implicitBaseDataOffset = trackData.currentOffset;
+            cond: if (trackData) {
+              if (trackData.samples.length === 0) {
+                this.currentFragment.trackData.delete(this.currentTrack.id);
+                break cond;
+              }
               trackData.presentationTimestamps = trackData.samples.map((x, i) => ({ presentationTimestamp: x.presentationTimestamp, sampleIndex: i })).sort((a, b) => a.presentationTimestamp - b.presentationTimestamp);
               for (let i = 0; i < trackData.presentationTimestamps.length; i++) {
                 const currentEntry = trackData.presentationTimestamps[i];
@@ -5562,10 +5651,6 @@ class IsobmffDemuxer extends Demuxer {
             };
             this.currentFragment.trackData.set(track.id, trackData);
           }
-          if (sampleCount === 0) {
-            this.currentFragment.implicitBaseDataOffset = trackData.currentOffset;
-            break;
-          }
           for (let i = 0; i < sampleCount; i++) {
             let sampleDuration;
             if (sampleDurationPresent) {
@@ -5611,6 +5696,7 @@ class IsobmffDemuxer extends Demuxer {
             trackData.currentOffset += sampleSize;
             trackData.currentTimestamp += sampleDuration;
           }
+          this.currentFragment.implicitBaseDataOffset = trackData.currentOffset;
         }
         break;
       case "saiz":
@@ -5660,7 +5746,7 @@ class IsobmffDemuxer extends Demuxer {
             break;
           }
           if (entryCount > 1) {
-            console.warn("Multiple saio entries are not supported; using the first offset only.");
+            Logging._warn("Multiple saio entries are not supported; using the first offset only.");
           }
           let offset = version === 0 ? readU32Be(slice) : Number(readU64Be(slice));
           if (this.currentFragment) {
@@ -6057,6 +6143,9 @@ class IsobmffTrackBacking {
   isRelativeToUnixEpoch() {
     return false;
   }
+  getUnixTimeForTimestamp() {
+    return null;
+  }
   getDisposition() {
     return this.internalTrack.disposition;
   }
@@ -6408,7 +6497,7 @@ class IsobmffVideoTrackBacking extends IsobmffTrackBacking {
     };
   }
   async canBeTransparent() {
-    return false;
+    return this.internalTrack.info.codec === "prores" && (this.internalTrack.info.proresFormat === "ap4h" || this.internalTrack.info.proresFormat === "ap4x");
   }
   async getDecoderConfig() {
     if (!this.internalTrack.info.codec) {
@@ -7123,6 +7212,7 @@ const CODEC_STRING_MAP = {
   "vp8": "V_VP8",
   "vp9": "V_VP9",
   "av1": "V_AV1",
+  "prores": "V_PRORES",
   "aac": "A_AAC",
   "mp3": "A_MPEG/L3",
   "opus": "A_OPUS",
@@ -7600,6 +7690,7 @@ class MatroskaDemuxer extends Demuxer {
           data: frameData,
           lacing: BlockLacing.None,
           decoded: true,
+          postProcessed: false,
           mainAdditional: originalBlock.mainAdditional
         });
       }
@@ -7743,7 +7834,7 @@ class MatroskaDemuxer extends Demuxer {
           if (this.currentTrack.decodingInstructions.some((instruction) => {
             return instruction.data?.type !== "decompress" || instruction.scope !== ContentEncodingScope.Block || instruction.data.algorithm !== ContentCompAlgo.HeaderStripping;
           })) {
-            console.warn(`Track #${this.currentTrack.id} has an unsupported content encoding; dropping.`);
+            Logging._warn(`Track #${this.currentTrack.id} has an unsupported content encoding; dropping.`);
             this.currentTrack = null;
           }
           if (this.currentTrack && this.currentTrack.id !== -1 && this.currentTrack.codecId && this.currentTrack.info) {
@@ -7775,6 +7866,12 @@ class MatroskaDemuxer extends Demuxer {
                 this.currentTrack.info.codec = "vp9";
               } else if (codecIdWithoutSuffix === CODEC_STRING_MAP.av1) {
                 this.currentTrack.info.codec = "av1";
+              } else if (codecIdWithoutSuffix === CODEC_STRING_MAP.prores) {
+                const format = this.currentTrack.codecPrivate ? textDecoder.decode(this.currentTrack.codecPrivate) : "";
+                if (PRORES_FOURCCS.includes(format)) {
+                  this.currentTrack.info.codec = "prores";
+                  this.currentTrack.info.proresFormat = format;
+                }
               }
               const videoTrack = this.currentTrack;
               this.currentTrack.trackBacking = new MatroskaVideoTrackBacking(videoTrack);
@@ -7866,7 +7963,8 @@ class MatroskaDemuxer extends Demuxer {
               codec: null,
               codecDescription: null,
               colorSpace: null,
-              alphaMode: false
+              alphaMode: false,
+              proresFormat: null
             };
           } else if (type === 2) {
             this.currentTrack.info = {
@@ -8206,6 +8304,7 @@ class MatroskaDemuxer extends Demuxer {
             data: blockData,
             lacing,
             decoded: !hasDecodingInstructions,
+            postProcessed: false,
             mainAdditional: null
           });
         }
@@ -8242,6 +8341,7 @@ class MatroskaDemuxer extends Demuxer {
             data: blockData,
             lacing,
             decoded: !hasDecodingInstructions,
+            postProcessed: false,
             mainAdditional: null
           };
           trackData.blocks.push(this.currentBlock);
@@ -8659,6 +8759,9 @@ class MatroskaTrackBacking {
   isRelativeToUnixEpoch() {
     return false;
   }
+  getUnixTimeForTimestamp() {
+    return null;
+  }
   getDisposition() {
     return this.internalTrack.disposition;
   }
@@ -8824,6 +8927,23 @@ class MatroskaTrackBacking {
       block.data = this.internalTrack.demuxer.decodeBlockData(this.internalTrack, block.data);
       block.decoded = true;
     }
+    if (!block.postProcessed) {
+      if (this.internalTrack.info?.codec === "prores") {
+        const hasFrameContainer = block.data.length >= 8 && block.data[4] === 105 && block.data[5] === 99 && block.data[6] === 112 && block.data[7] === 102;
+        if (!hasFrameContainer) {
+          const newData = new Uint8Array(block.data.length + 8);
+          const newDataView = toDataView(newData);
+          newDataView.setUint32(0, newData.length, false);
+          newData[4] = 105;
+          newData[5] = 99;
+          newData[6] = 112;
+          newData[7] = 102;
+          newData.set(block.data, 8);
+          block.data = newData;
+        }
+      }
+      block.postProcessed = true;
+    }
     const data = options.metadataOnly ? PLACEHOLDER_DATA : block.data;
     const timestamp = block.timestamp / this.internalTrack.segment.timestampFactor;
     const duration = block.duration / this.internalTrack.segment.timestampFactor;
@@ -8974,7 +9094,7 @@ class MatroskaVideoTrackBacking extends MatroskaTrackBacking {
     };
   }
   async canBeTransparent() {
-    return this.internalTrack.info.alphaMode;
+    return this.internalTrack.info.alphaMode || this.internalTrack.info.codec === "prores" && (this.internalTrack.info.proresFormat === "ap4h" || this.internalTrack.info.proresFormat === "ap4x");
   }
   async getDecoderConfig() {
     if (!this.internalTrack.info.codec) {
@@ -8998,7 +9118,8 @@ class MatroskaVideoTrackBacking extends MatroskaTrackBacking {
           avcCodecInfo: this.internalTrack.info.codec === "avc" && firstPacket ? extractAvcDecoderConfigurationRecord(firstPacket.data) : null,
           hevcCodecInfo: this.internalTrack.info.codec === "hevc" && firstPacket ? extractHevcDecoderConfigurationRecord(firstPacket.data) : null,
           vp9CodecInfo: this.internalTrack.info.codec === "vp9" && firstPacket ? extractVp9CodecInfoFromPacket(firstPacket.data) : null,
-          av1CodecInfo: this.internalTrack.info.codec === "av1" && firstPacket ? extractAv1CodecInfoFromPacket(firstPacket.data) : null
+          av1CodecInfo: this.internalTrack.info.codec === "av1" && firstPacket ? extractAv1CodecInfoFromPacket(firstPacket.data) : null,
+          proresFormat: this.internalTrack.info.proresFormat
         }),
         codedWidth: this.internalTrack.info.width,
         codedHeight: this.internalTrack.info.height,
@@ -9047,22 +9168,24 @@ class MatroskaAudioTrackBacking extends MatroskaTrackBacking {
     });
   }
 }
-const readNextMp3FrameHeader = async (reader, startPos, until) => {
+const readNextMp3FrameHeader = async (reader, startPos, until, ref = null) => {
   const CHUNK_SIZE = 2 ** 16;
   let currentPos = startPos;
   while (until === null || currentPos < until) {
     const maxLength = until !== null ? Math.min(CHUNK_SIZE, until - currentPos) : CHUNK_SIZE;
-    let slice = reader.requestSliceRange(currentPos, FRAME_HEADER_SIZE, maxLength);
+    let slice = reader.requestSliceRange(currentPos, MP3_FRAME_HEADER_SIZE, maxLength);
     if (slice instanceof Promise)
       slice = await slice;
-    if (!slice || slice.length < FRAME_HEADER_SIZE)
+    if (!slice || slice.length < MP3_FRAME_HEADER_SIZE)
       break;
-    while (slice.remainingLength >= FRAME_HEADER_SIZE) {
+    while (slice.remainingLength >= MP3_FRAME_HEADER_SIZE) {
       const posBeforeRead = slice.filePos;
       const word = readU32Be(slice);
       const remainingBytes = reader.fileSize !== null ? reader.fileSize - currentPos : null;
       const result = readMp3FrameHeader(word, remainingBytes);
-      if (result.header) {
+      if (result.header && (!ref || // This condition helps us recover malformed streams
+      // https://stackoverflow.com/a/20884944
+      result.header.sampleRate === ref.sampleRate && result.header.mpegVersionId === ref.mpegVersionId && result.header.layer === ref.layer && getMp3ChannelCount(result.header.channel) === getMp3ChannelCount(ref.channel))) {
         return { header: result.header, startPos: currentPos };
       }
       slice.filePos = posBeforeRead + result.bytesAdvanced;
@@ -9115,7 +9238,7 @@ class Mp3Demuxer extends Demuxer {
         this.lastLoadedPos = slice2.filePos + id3V2Header.size;
       }
     }
-    const result = await readNextMp3FrameHeader(this.reader, this.lastLoadedPos, this.reader.fileSize);
+    const result = await readNextMp3FrameHeader(this.reader, this.lastLoadedPos, this.reader.fileSize, this.firstFrameHeader);
     if (!result) {
       this.lastSampleLoaded = true;
       return;
@@ -9150,9 +9273,6 @@ class Mp3Demuxer extends Demuxer {
     if (!this.firstFrameHeader) {
       this.firstFrameHeader = header;
       this.firstFrameHeaderPos = result.startPos;
-    }
-    if (header.sampleRate !== this.firstFrameHeader.sampleRate) {
-      console.warn(`MP3 changed sample rate mid-file: ${this.firstFrameHeader.sampleRate} Hz to ${header.sampleRate} Hz. Might be a bug, so please report this file.`);
     }
     const sampleDuration = header.audioSamplesInFrame / this.firstFrameHeader.sampleRate;
     const sample = {
@@ -9237,6 +9357,9 @@ class Mp3AudioTrackBacking {
   isRelativeToUnixEpoch() {
     return false;
   }
+  getUnixTimeForTimestamp() {
+    return null;
+  }
   getPairingMask() {
     return 1n;
   }
@@ -9280,7 +9403,7 @@ class Mp3AudioTrackBacking {
   }
   getNumberOfChannels() {
     assert(this.demuxer.firstFrameHeader);
-    return this.demuxer.firstFrameHeader.channel === 3 ? 1 : 2;
+    return getMp3ChannelCount(this.demuxer.firstFrameHeader.channel);
   }
   getSampleRate() {
     assert(this.demuxer.firstFrameHeader);
@@ -9295,7 +9418,7 @@ class Mp3AudioTrackBacking {
     assert(this.demuxer.firstFrameHeader);
     return {
       codec: "mp3",
-      numberOfChannels: this.demuxer.firstFrameHeader.channel === 3 ? 1 : 2,
+      numberOfChannels: getMp3ChannelCount(this.demuxer.firstFrameHeader.channel),
       sampleRate: this.demuxer.firstFrameHeader.sampleRate
     };
   }
@@ -9762,6 +9885,9 @@ class OggAudioTrackBacking {
   }
   isRelativeToUnixEpoch() {
     return false;
+  }
+  getUnixTimeForTimestamp() {
+    return null;
   }
   getPairingMask() {
     return 1n;
@@ -10481,6 +10607,9 @@ class WaveAudioTrackBacking {
   isRelativeToUnixEpoch() {
     return false;
   }
+  getUnixTimeForTimestamp() {
+    return null;
+  }
   getPairingMask() {
     return 1n;
   }
@@ -10763,6 +10892,9 @@ class AdtsAudioTrackBacking {
   isRelativeToUnixEpoch() {
     return false;
   }
+  getUnixTimeForTimestamp() {
+    return null;
+  }
   getPairingMask() {
     return 1n;
   }
@@ -11037,9 +11169,29 @@ class FlacDemuxer extends Demuxer {
     return "audio/flac";
   }
   async readMetadata() {
-    let currentPos = 4;
     return this.metadataPromise ?? (this.metadataPromise = (async () => {
       var _a;
+      let currentPos = 0;
+      while (true) {
+        let headerSlice = this.reader.requestSlice(currentPos, ID3_V2_HEADER_SIZE);
+        if (headerSlice instanceof Promise)
+          headerSlice = await headerSlice;
+        if (!headerSlice) {
+          this.lastSampleLoaded = true;
+          return;
+        }
+        const id3V2Header = readId3V2Header(headerSlice);
+        if (!id3V2Header) {
+          break;
+        }
+        let contentSlice = this.reader.requestSlice(headerSlice.filePos, id3V2Header.size);
+        if (contentSlice instanceof Promise)
+          contentSlice = await contentSlice;
+        assert(contentSlice);
+        parseId3V2Tag(contentSlice, id3V2Header, this.metadataTags);
+        currentPos = headerSlice.filePos + id3V2Header.size;
+      }
+      currentPos += 4;
       while (this.reader.fileSize === null || currentPos < this.reader.fileSize) {
         let sizeSlice = this.reader.requestSlice(currentPos, 4);
         if (sizeSlice instanceof Promise)
@@ -11334,6 +11486,9 @@ class FlacAudioTrackBacking {
   isRelativeToUnixEpoch() {
     return false;
   }
+  getUnixTimeForTimestamp() {
+    return null;
+  }
   getPairingMask() {
     return 1n;
   }
@@ -11370,7 +11525,7 @@ class FlacAudioTrackBacking {
   async getPacket(timestamp, options) {
     assert(this.demuxer.audioInfo);
     if (timestamp < 0) {
-      throw new Error("Timestamp cannot be negative");
+      return null;
     }
     const release = await this.demuxer.readingMutex.acquire();
     try {
@@ -11503,6 +11658,10 @@ class MpegTsDemuxer extends Demuxer {
           break;
         }
         if (packetHeader.payloadUnitStartIndicator === 0) {
+          currentPos += this.packetStride;
+          continue;
+        }
+        if (hasProgramMap && !this.elementaryStreams.some((x) => x.pid === packetHeader.pid)) {
           currentPos += this.packetStride;
           continue;
         }
@@ -11655,7 +11814,7 @@ class MpegTsDemuxer extends Demuxer {
                 break;
               default: {
                 if (!ignoredStreamTypes.has(streamType)) {
-                  console.warn(`Note: MPEG-TS streams with stream_type 0x${streamType.toString(16)} are not currently supported.`);
+                  Logging._warn(`Note: MPEG-TS streams with stream_type 0x${streamType.toString(16)} are not currently supported.`);
                   ignoredStreamTypes.add(streamType);
                 }
               }
@@ -11774,7 +11933,8 @@ class MpegTsDemuxer extends Demuxer {
                   avcCodecInfo: elementaryStream.info.avcCodecInfo,
                   hevcCodecInfo: elementaryStream.info.hevcCodecInfo,
                   vp9CodecInfo: null,
-                  av1CodecInfo: null
+                  av1CodecInfo: null,
+                  proresFormat: null
                 }),
                 codedWidth: elementaryStream.info.width,
                 codedHeight: elementaryStream.info.height,
@@ -11808,7 +11968,7 @@ class MpegTsDemuxer extends Demuxer {
                 if (!result.header) {
                   throw new Error("Invalid MP3 audio stream; could not read frame header from first packet.");
                 }
-                elementaryStream.info.numberOfChannels = result.header.channel === 3 ? 1 : 2;
+                elementaryStream.info.numberOfChannels = getMp3ChannelCount(result.header.channel);
                 elementaryStream.info.sampleRate = result.header.sampleRate;
               } else if (elementaryStream.info.codec === "ac3") {
                 const frameInfo = parseAc3SyncFrame(context.suppliedPacket.data);
@@ -12127,6 +12287,9 @@ class MpegTsTrackBacking {
   }
   isRelativeToUnixEpoch() {
     return false;
+  }
+  getUnixTimeForTimestamp() {
+    return null;
   }
   getPairingMask() {
     return 1n;
@@ -12712,7 +12875,10 @@ class PacketReadingContext {
       if (codec !== "avc" && codec !== "hevc") {
         throw new Error("Unhandled.");
       }
+      const nalHeaderSize = codec === "avc" ? 1 : 2;
       let packetStartPos = null;
+      let frameStartFound = false;
+      let lastFirstMacroblockInSlice = 0;
       while (true) {
         let remaining = this.ensureBuffered(CHUNK_SIZE);
         if (remaining instanceof Promise)
@@ -12731,7 +12897,7 @@ class PacketReadingContext {
           }
           i = zeroIndex;
           const posBeforeZero = chunkStartPos + i;
-          if (i + 4 >= length) {
+          if (i + 3 >= length) {
             this.seekTo(posBeforeZero);
             break;
           }
@@ -12739,32 +12905,68 @@ class PacketReadingContext {
           const b2 = chunk[i + 2];
           const b3 = chunk[i + 3];
           let startCodeLength = 0;
-          let nalUnitTypeByte = null;
           if (b1 === 0 && b2 === 0 && b3 === 1) {
             startCodeLength = 4;
-            nalUnitTypeByte = chunk[i + 4];
           } else if (b1 === 0 && b2 === 1) {
             startCodeLength = 3;
-            nalUnitTypeByte = b3;
           }
           if (startCodeLength === 0) {
             i++;
             continue;
           }
           const startCodePos = posBeforeZero;
-          if (packetStartPos === null) {
-            packetStartPos = startCodePos;
-            i += startCodeLength;
-            continue;
+          packetStartPos ?? (packetStartPos = startCodePos);
+          const nalHeaderStart = i + startCodeLength;
+          const payloadStart = nalHeaderStart + nalHeaderSize;
+          const AVC_SLICE_HEADER_PEEK_SIZE = 6;
+          const bytesNeeded = payloadStart + (codec === "avc" ? AVC_SLICE_HEADER_PEEK_SIZE : 1);
+          if (bytesNeeded > length) {
+            this.seekTo(posBeforeZero);
+            break;
           }
-          if (nalUnitTypeByte !== null) {
-            const nalUnitType = codec === "avc" ? extractNalUnitTypeForAvc(nalUnitTypeByte) : extractNalUnitTypeForHevc(nalUnitTypeByte);
-            const isAud = codec === "avc" ? nalUnitType === AvcNalUnitType.AUD : nalUnitType === HevcNalUnitType.AUD_NUT;
-            if (isAud) {
-              const packetLength = startCodePos - packetStartPos;
-              this.seekTo(packetStartPos);
-              return this.supplyPacket(packetLength, 0);
+          const headerByte0 = chunk[nalHeaderStart];
+          let nalUnitType;
+          let isSlice;
+          let isAccessUnitStart;
+          if (codec === "avc") {
+            nalUnitType = extractNalUnitTypeForAvc(headerByte0);
+            isSlice = nalUnitType === AvcNalUnitType.NON_IDR_SLICE || nalUnitType === AvcNalUnitType.SLICE_DPA || nalUnitType === AvcNalUnitType.IDR;
+            isAccessUnitStart = nalUnitType === AvcNalUnitType.SEI || nalUnitType === AvcNalUnitType.SPS || nalUnitType === AvcNalUnitType.PPS || nalUnitType === AvcNalUnitType.AUD;
+          } else {
+            nalUnitType = extractNalUnitTypeForHevc(headerByte0);
+            const layerId = (headerByte0 & 1) << 5 | chunk[nalHeaderStart + 1] >> 3;
+            if (layerId > 0) {
+              i += startCodeLength;
+              continue;
             }
+            isSlice = nalUnitType <= HevcNalUnitType.RASL_R || nalUnitType >= HevcNalUnitType.BLA_W_LP && nalUnitType <= 21;
+            isAccessUnitStart = nalUnitType >= HevcNalUnitType.VPS_NUT && nalUnitType <= 37 || nalUnitType === HevcNalUnitType.PREFIX_SEI_NUT || nalUnitType >= 41 && nalUnitType <= 44 || nalUnitType >= 48 && nalUnitType <= 55;
+          }
+          let isFrameBoundary = false;
+          if (isSlice) {
+            let startsNewPicture;
+            if (codec === "avc") {
+              const headerBytes = chunk.subarray(payloadStart, payloadStart + AVC_SLICE_HEADER_PEEK_SIZE);
+              const firstMacroblockInSlice = readExpGolomb(new Bitstream(headerBytes));
+              startsNewPicture = !frameStartFound || firstMacroblockInSlice <= lastFirstMacroblockInSlice;
+              lastFirstMacroblockInSlice = firstMacroblockInSlice;
+            } else {
+              startsNewPicture = chunk[payloadStart] >> 7 === 1;
+            }
+            if (startsNewPicture) {
+              if (frameStartFound) {
+                isFrameBoundary = true;
+              } else {
+                frameStartFound = true;
+              }
+            }
+          } else if (isAccessUnitStart && frameStartFound) {
+            isFrameBoundary = true;
+          }
+          if (isFrameBoundary) {
+            const packetLength = startCodePos - packetStartPos;
+            this.seekTo(packetStartPos);
+            return this.supplyPacket(packetLength, 0);
           }
           i += startCodeLength;
         }
@@ -12772,7 +12974,7 @@ class PacketReadingContext {
           break;
         }
       }
-      if (packetStartPos !== null) {
+      if (packetStartPos !== null && this.endPos > packetStartPos) {
         const packetLength = this.endPos - packetStartPos;
         this.seekTo(packetStartPos);
         return this.supplyPacket(packetLength, 0);
@@ -12816,13 +13018,13 @@ class PacketReadingContext {
             }
             this.skip(-1);
             const possibleHeaderStartPos = this.currentPos;
-            let remaining2 = this.ensureBuffered(FRAME_HEADER_SIZE);
+            let remaining2 = this.ensureBuffered(MP3_FRAME_HEADER_SIZE);
             if (remaining2 instanceof Promise)
               remaining2 = await remaining2;
-            if (remaining2 < FRAME_HEADER_SIZE) {
+            if (remaining2 < MP3_FRAME_HEADER_SIZE) {
               return;
             }
-            const headerBytes = this.readBytes(FRAME_HEADER_SIZE);
+            const headerBytes = this.readBytes(MP3_FRAME_HEADER_SIZE);
             const word = toDataView(headerBytes).getUint32(0);
             const result = readMp3FrameHeader(word, null);
             if (result.header) {
@@ -13124,6 +13326,15 @@ class SegmentedInput {
     }
     return lastSegment.timestamp + lastSegment.duration;
   }
+  async getUnixTimeForTimestamp(timestamp) {
+    let segment = await this.getSegmentAt(timestamp, {});
+    segment ?? (segment = await this.getFirstSegment({}));
+    if (!segment || segment.unixEpochTimestamp === null) {
+      return null;
+    }
+    const elapsed = timestamp - segment.timestamp;
+    return segment.unixEpochTimestamp + elapsed;
+  }
   async getTrackBackings() {
     return this.trackBackingsPromise ?? (this.trackBackingsPromise = (async () => {
       const backings = [];
@@ -13274,7 +13485,10 @@ class SegmentedInputInputTrackBacking {
   async isRelativeToUnixEpoch() {
     await this.hydrate();
     assert(this.segmentedInput.firstSegment);
-    return this.segmentedInput.firstSegment.relativeToUnixEpoch;
+    return this.segmentedInput.firstSegment.unixEpochTimestamp === this.segmentedInput.firstSegment.timestamp;
+  }
+  getUnixTimeForTimestamp(timestamp) {
+    return this.segmentedInput.getUnixTimeForTimestamp(timestamp);
   }
   getBitrate() {
     return this.delegate(() => this.firstInputTrack._backing.getBitrate());
@@ -13443,14 +13657,25 @@ class SegmentedInputInputAudioTrackBacking extends SegmentedInputInputTrackBacki
 polyfillSymbolDispose();
 const DEFAULT_MIN_READ_POSITION = 0;
 const DEFAULT_MAX_READ_POSITION = Infinity;
+if (typeof FinalizationRegistry !== "undefined") {
+  new FinalizationRegistry((cleanup) => {
+    cleanup();
+  });
+}
 class Source extends EventEmitter {
   constructor() {
-    super(...arguments);
+    super();
     this._disposed = false;
     this._refCount = 0;
     this._usedForHls = false;
+    this._refFinalizationRegistry = null;
     this._sizePromise = null;
     this.onread = null;
+    if (typeof FinalizationRegistry !== "undefined") {
+      this._refFinalizationRegistry = new FinalizationRegistry((source) => {
+        source._decrementRefCount();
+      });
+    }
   }
   /**
    * Resolves with the total size of the file in bytes. This function is memoized, meaning only the first call
@@ -13516,6 +13741,18 @@ class Source extends EventEmitter {
   ref() {
     return new SourceRef(this);
   }
+  /** @internal */
+  _incrementRefCount() {
+    this._refCount++;
+  }
+  /** @internal */
+  _decrementRefCount() {
+    this._refCount--;
+    if (this._refCount === 0) {
+      this._dispose();
+      this._disposed = true;
+    }
+  }
 }
 class SourceRef {
   /** @internal */
@@ -13524,7 +13761,8 @@ class SourceRef {
     if (source._disposed) {
       throw new Error("Cannot ref a disposed source.");
     }
-    source._refCount++;
+    source._incrementRefCount();
+    source._refFinalizationRegistry?.register(this, source, this);
     this._source = source;
   }
   /** The {@link Source} this ref references. Accessing this field throws an error after having freed the ref. */
@@ -13548,11 +13786,8 @@ class SourceRef {
     }
     const source = this.source;
     assert(source._refCount > 0);
-    source._refCount--;
-    if (source._refCount === 0) {
-      source._dispose();
-      source._disposed = true;
-    }
+    source._decrementRefCount();
+    source._refFinalizationRegistry?.unregister(this);
     this._freed = true;
     this._source = null;
   }
@@ -13660,9 +13895,13 @@ class BlobSource extends Source {
     if (options.maxCacheSize !== void 0 && (!isNumber(options.maxCacheSize) || options.maxCacheSize < 0)) {
       throw new TypeError("options.maxCacheSize, when provided, must be a non-negative number.");
     }
+    if (options.useStreamReader !== void 0 && typeof options.useStreamReader !== "boolean") {
+      throw new TypeError("options.useStreamReader, when provided, must be a boolean.");
+    }
     super();
     this._readers = /* @__PURE__ */ new WeakMap();
     this._blob = blob;
+    this._options = options;
     this._orchestrator = new ReadOrchestrator({
       maxCacheSize: options.maxCacheSize ?? 8 * 2 ** 20,
       maxWorkerCount: 4,
@@ -13684,7 +13923,7 @@ class BlobSource extends Source {
     assert(worker.strictTarget);
     let reader = this._readers.get(worker);
     if (reader === void 0) {
-      if ("stream" in this._blob && !isWebKit()) {
+      if ("stream" in this._blob && !isWebKit() && this._options.useStreamReader !== false) {
         const slice = this._blob.slice(worker.currentPos);
         reader = slice.stream().getReader();
       } else {
@@ -13725,7 +13964,7 @@ class BlobSource extends Source {
 }
 const URL_SOURCE_MIN_LOAD_AMOUNT = 0.5 * 2 ** 20;
 const DEFAULT_RETRY_DELAY = ((previousAttempts, error, src) => {
-  const couldBeCorsError = error instanceof Error && (error.message.includes("Failed to fetch") || error.message.includes("Load failed") || error.message.includes("NetworkError when attempting to fetch resource"));
+  const couldBeCorsError = error instanceof Error && (error.message.includes("Failed to fetch") || error.message.includes("Load failed") || error.message.includes("NetworkError when attempting to fetch resource")) && typeof window !== "undefined";
   if (couldBeCorsError) {
     let originOfSrc = null;
     try {
@@ -13736,7 +13975,7 @@ const DEFAULT_RETRY_DELAY = ((previousAttempts, error, src) => {
     }
     const isOnline = typeof navigator !== "undefined" && typeof navigator.onLine === "boolean" ? navigator.onLine : true;
     if (isOnline && originOfSrc !== null && originOfSrc !== window.location.origin) {
-      console.warn(`Request will not be retried because a CORS error was suspected due to different origins. You can modify this behavior by providing your own function for the 'getRetryDelay' option.`);
+      Logging._warn(`Request will not be retried because a CORS error was suspected due to different origins. You can modify this behavior by providing your own function for the 'getRetryDelay' option.`);
       return null;
     }
   }
@@ -13747,8 +13986,8 @@ class UrlSource extends PathedSource {
   /**
    * Creates a new {@link UrlSource} backed by the resource at the specified URL.
    *
-   * When passing a `Request` instance, note that the `signal` and `headers.Range` options will be overridden by
-   * Mediabunny. If you want to cancel ongoing requests, use {@link Input.dispose}.
+   * When passing a `Request` instance, note that its `signal` will be overridden by Mediabunny; if you want to cancel
+   * ongoing requests, use {@link Input.dispose}.
    */
   constructor(url, options = {}) {
     if (typeof url !== "string" && !(url instanceof URL) && !(typeof Request !== "undefined" && url instanceof Request)) {
@@ -13774,10 +14013,39 @@ class UrlSource extends PathedSource {
     }
     const urlString = url instanceof Request ? url.url : url instanceof URL ? url.href : url;
     super(urlString, (request) => new UrlSource(request.path, this._options));
+    this._offset = 0;
+    this._length = null;
     this._fileSizeDetermined = false;
     this._url = url;
     this._options = options;
     this._getRetryDelay = options.getRetryDelay ?? DEFAULT_RETRY_DELAY;
+    this._requestInit = { ...options.requestInit };
+    let rangeHeaderValue = null;
+    if (options.requestInit?.headers) {
+      const headers = { ...normalizeHeaders(options.requestInit.headers) };
+      const rangeKey = Object.keys(headers).find((key) => key.toLowerCase() === "range");
+      if (rangeKey !== void 0) {
+        rangeHeaderValue = headers[rangeKey];
+        delete headers[rangeKey];
+        this._requestInit.headers = headers;
+      }
+    }
+    if (url instanceof Request) {
+      const requestRange = url.headers.get("Range");
+      if (requestRange !== null) {
+        rangeHeaderValue ?? (rangeHeaderValue = requestRange);
+        const strippedRequest = new Request(url);
+        strippedRequest.headers.delete("Range");
+        this._url = strippedRequest;
+      }
+    }
+    if (rangeHeaderValue !== null) {
+      const parsed = parseByteRangeHeader(rangeHeaderValue);
+      if (parsed) {
+        this._offset = parsed.offset;
+        this._length = parsed.length;
+      }
+    }
     const DEFAULT_PARALLELISM = 2;
     this._orchestrator = new ReadOrchestrator({
       maxCacheSize: options.maxCacheSize ?? 64 * 2 ** 20,
@@ -13788,17 +14056,40 @@ class UrlSource extends PathedSource {
   }
   /** @internal */
   _getFileSize() {
-    return this._fileSizeDetermined ? this._orchestrator.fileSize : void 0;
+    if (!this._fileSizeDetermined) {
+      return this._length !== null ? this._length : void 0;
+    }
+    const baseSize = this._orchestrator.fileSize;
+    if (baseSize === null) {
+      return this._length !== null ? this._length : null;
+    }
+    return clamp$1(baseSize - this._offset, 0, this._length ?? Infinity);
   }
   /** @internal */
   _read(start, end, minReadPosition, maxReadPosition) {
-    return this._orchestrator.read(start, end, minReadPosition, maxReadPosition);
+    if (this._length !== null && end > this._length) {
+      return null;
+    }
+    const offset = this._offset;
+    const result = this._orchestrator.read(offset + start, offset + end, Math.max(offset + minReadPosition, offset), offset + Math.min(maxReadPosition, this._length ?? Infinity));
+    const processResult = (result2) => {
+      if (!result2) {
+        return null;
+      }
+      result2.offset -= this._offset;
+      return result2;
+    };
+    if (result instanceof Promise) {
+      return result.then(processResult);
+    } else {
+      return processResult(result);
+    }
   }
   /** @internal */
   async _runWorker(worker) {
     while (true) {
       const abortController = new AbortController();
-      const response = await retriedFetch(this._options.fetchFn ?? fetch, this._url, mergeRequestInit(this._options.requestInit ?? {}, {
+      const response = await retriedFetch(this._options.fetchFn ?? fetch, this._url, mergeRequestInit(this._requestInit, {
         headers: {
           // Always sending a range request is a good way to probe if the server supports them
           Range: `bytes=${worker.currentPos}-`
@@ -13807,6 +14098,9 @@ class UrlSource extends PathedSource {
       }), this._getRetryDelay, () => this._disposed);
       if (!response.ok) {
         throw new Error(`Error fetching ${String(this._url)}: ${response.status} ${response.statusText}`);
+      }
+      if (response.redirected) {
+        this.rootPath = response.url;
       }
       outer: if (this._orchestrator.fileSize === null) {
         const contentRange = response.headers.get("Content-Range");
@@ -13828,8 +14122,7 @@ class UrlSource extends PathedSource {
           const url = new URL(this._url instanceof Request ? this._url.url : this._url, typeof window !== "undefined" ? window.location.href : void 0);
           if (url.origin !== "null" && !(url.pathname.endsWith(".m3u8") || url.pathname.endsWith(".m3u"))) {
             if (!warnedOrigins.has(url.origin)) {
-              console.log(this._usedForHls, this._url, url.pathname);
-              console.warn(`HTTP server (origin ${url.origin}) did not respond to a range request with 206 Partial Content, meaning the entire resource will now be downloaded. To enable efficient media file streaming across a network, please make sure your server supports range requests.`);
+              Logging._warn(`HTTP server (origin ${url.origin}) did not respond to a range request with 206 Partial Content, meaning the entire resource will now be downloaded. To enable efficient media file streaming across a network, please make sure your server supports range requests.`);
               warnedOrigins.add(url.origin);
             }
           }
@@ -13863,7 +14156,7 @@ class UrlSource extends PathedSource {
           }
           const retryDelayInSeconds = this._getRetryDelay(1, error, this._url);
           if (retryDelayInSeconds !== null) {
-            console.error("Error while reading response stream. Attempting to resume.", error);
+            Logging._error("Error while reading response stream. Attempting to resume.", error);
             await wait(1e3 * retryDelayInSeconds);
             break;
           } else {
@@ -13896,6 +14189,22 @@ class UrlSource extends PathedSource {
     this._orchestrator.dispose();
   }
 }
+const BYTE_RANGE_REGEX = /^bytes=(\d+)-(\d*)$/;
+const parseByteRangeHeader = (value) => {
+  const match = BYTE_RANGE_REGEX.exec(value.trim());
+  if (!match) {
+    return null;
+  }
+  const offset = Number(match[1]);
+  const end = match[2] === "" ? null : Number(match[2]);
+  if (end !== null && end < offset) {
+    return null;
+  }
+  return {
+    offset,
+    length: end !== null ? end - offset + 1 : null
+  };
+};
 class ReadableStreamSource extends Source {
   /** Creates a new {@link ReadableStreamSource} backed by the specified `ReadableStream<Uint8Array>`. */
   constructor(stream, options = {}) {
@@ -13918,7 +14227,7 @@ class ReadableStreamSource extends Source {
     this._endIndex = null;
     this._pulling = false;
     this._stream = stream;
-    this._maxCacheSize = options.maxCacheSize ?? 16 * 2 ** 20;
+    this._maxCacheSize = options.maxCacheSize ?? 32 * 2 ** 20;
   }
   /** @internal */
   _getFileSize() {
@@ -14010,6 +14319,7 @@ class ReadableStreamSource extends Source {
       }
       const startIndex = this._currentIndex;
       const endIndex = this._currentIndex + value.byteLength;
+      this._dispatchRead(startIndex, endIndex);
       for (let i = 0; i < this._pendingSlices.length; i++) {
         const pendingSlice = this._pendingSlices[i];
         const cappedStart = Math.max(startIndex, pendingSlice.start);
@@ -14237,6 +14547,13 @@ class ReadOrchestrator {
         view: toDataView(bytes2),
         offset: innerStart
       });
+    } else {
+      promise.catch((error) => {
+        if (this.disposed) {
+          return;
+        }
+        throw error;
+      });
     }
     return result;
   }
@@ -14316,7 +14633,7 @@ class ReadOrchestrator {
       if (worker.pendingSlices.length > 0) {
         worker.pendingSlices.forEach((x) => x.reject(error));
         worker.pendingSlices.length = 0;
-      } else {
+      } else if (!worker.aborted && !this.disposed) {
         throw error;
       }
     }).finally(() => {
@@ -14332,9 +14649,11 @@ class ReadOrchestrator {
           }
         }
         const queuedRead = this.queuedReads[oldestIndex];
-        this.queuedReads.splice(oldestIndex, 1);
         const newWorker = this.createWorker(queuedRead.hole.start, queuedRead.hole.end, queuedRead.strictTarget);
-        assert(newWorker);
+        if (!newWorker) {
+          return;
+        }
+        this.queuedReads.splice(oldestIndex, 1);
         newWorker.pendingSlices = queuedRead.pendingSlices;
         this.runWorker(newWorker);
       }
@@ -14579,20 +14898,17 @@ class RangedSource extends Source {
       return null;
     }
     const result = this._baseSource._read(this._offset + start, this._offset + end, this._offset + minReadPosition, this._offset + maxReadPosition);
-    if (result instanceof Promise) {
-      return result.then((result2) => {
-        if (!result2) {
-          return null;
-        }
-        result2.offset -= this._offset;
-        return result2;
-      });
-    } else {
-      if (!result) {
+    const processResult = (result2) => {
+      if (!result2) {
         return null;
       }
-      result.offset -= this._offset;
-      return result;
+      result2.offset -= this._offset;
+      return result2;
+    };
+    if (result instanceof Promise) {
+      return result.then(processResult);
+    } else {
+      return processResult(result);
     }
   }
   /** @internal */
@@ -14604,7 +14920,7 @@ class RangedSource extends Source {
     return super.ref();
   }
 }
-var __addDisposableResource = function(env, value, async) {
+var __addDisposableResource$1 = function(env, value, async) {
   if (value !== null && value !== void 0) {
     if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
     var dispose, inner;
@@ -14631,7 +14947,7 @@ var __addDisposableResource = function(env, value, async) {
   }
   return value;
 };
-var __disposeResources = /* @__PURE__ */ (function(SuppressedError2) {
+var __disposeResources$1 = /* @__PURE__ */ (function(SuppressedError2) {
   return function(env) {
     function fail(e) {
       env.error = env.hasError ? new SuppressedError2(e, env.error, "An error was suppressed during disposal.") : e;
@@ -14673,6 +14989,7 @@ class HlsSegmentedInput extends SegmentedInput {
     this.streamHasEnded = false;
     this.lastSegmentUpdateTime = -Infinity;
     this.refreshInterval = 5;
+    this.rootPath = path;
     this.demuxer = demuxer;
     this.nextLines = lines;
   }
@@ -14708,20 +15025,25 @@ class HlsSegmentedInput extends SegmentedInput {
     if (!lines) {
       const env_1 = { stack: [], error: void 0, hasError: false };
       try {
-        const ref = __addDisposableResource(env_1, await this.demuxer.input._getSourceUncached({ path: this.path, isRoot: false }), false);
+        const ref = __addDisposableResource$1(env_1, await this.demuxer.input._getSourceUncached({ path: this.rootPath, isRoot: false }), false);
         const reader = new Reader(ref.source);
         const slice = await reader.requestEntireFile();
         assert(slice);
         lines = readAllLines(slice, slice.length, { ignore: canIgnoreLine });
+        if (ref.source instanceof PathedSource) {
+          this.rootPath = ref.source.rootPath;
+        }
       } catch (e_1) {
         env_1.error = e_1;
         env_1.hasError = true;
       } finally {
-        __disposeResources(env_1);
+        __disposeResources$1(env_1);
       }
     }
+    const offsetTimestampsByDateTime = this.input._formatOptions.hls?.offsetTimestampsByDateTime !== false;
     let headerRead = false;
     let accumulatedTime = 0;
+    let accumulatedUnixTime = null;
     let nextSegmentDuration = null;
     let currentKey = null;
     let nextSequenceNumber = 0;
@@ -14757,6 +15079,7 @@ class HlsSegmentedInput extends SegmentedInput {
           currentFirstSegment = prevLastSegment.firstSegment;
           currentInitSegment = prevLastSegment.initSegment;
           lastProgramDateTimeSeconds = prevLastSegment.lastProgramDateTimeSeconds;
+          accumulatedUnixTime = prevLastSegment.unixEpochTimestamp !== null ? prevLastSegment.unixEpochTimestamp + prevLastSegment.duration : null;
           prevLastSegment = null;
         }
       }
@@ -14783,7 +15106,7 @@ class HlsSegmentedInput extends SegmentedInput {
             view.setUint32(12, nextSequenceNumber);
             key = { ...key, iv };
           }
-          const fullPath = joinPaths(this.path, line);
+          const fullPath = joinPaths(this.rootPath, line);
           const location = {
             path: fullPath,
             offset: nextByteRange?.offset ?? 0,
@@ -14791,7 +15114,7 @@ class HlsSegmentedInput extends SegmentedInput {
           };
           const segment = {
             timestamp: accumulatedTime,
-            relativeToUnixEpoch: lastProgramDateTimeSeconds !== null,
+            unixEpochTimestamp: accumulatedUnixTime,
             firstSegment: currentFirstSegment,
             sequenceNumber: nextSequenceNumber,
             location,
@@ -14802,6 +15125,9 @@ class HlsSegmentedInput extends SegmentedInput {
           };
           currentFirstSegment ?? (currentFirstSegment = segment);
           accumulatedTime += nextSegmentDuration;
+          if (accumulatedUnixTime !== null) {
+            accumulatedUnixTime += nextSegmentDuration;
+          }
           this.segments.push(segment);
         }
         nextSegmentDuration = null;
@@ -14846,7 +15172,7 @@ class HlsSegmentedInput extends SegmentedInput {
           throw new Error("Invalid #EXT-X-MAP tag; BYTERANGE attribute must have a specified offset.");
         }
         if (!prevLastSegment) {
-          const fullPath = joinPaths(this.path, uri);
+          const fullPath = joinPaths(this.rootPath, uri);
           const location = {
             path: fullPath,
             offset: parsedByteRange?.offset ?? 0,
@@ -14857,7 +15183,7 @@ class HlsSegmentedInput extends SegmentedInput {
           }
           const segment = {
             timestamp: accumulatedTime,
-            relativeToUnixEpoch: lastProgramDateTimeSeconds !== null,
+            unixEpochTimestamp: accumulatedUnixTime,
             firstSegment: null,
             sequenceNumber: null,
             location,
@@ -14904,7 +15230,7 @@ class HlsSegmentedInput extends SegmentedInput {
           }
           currentKey = {
             method: "AES-128",
-            keyUri: joinPaths(this.path, uri),
+            keyUri: joinPaths(this.rootPath, uri),
             iv,
             keyFormat
           };
@@ -14968,13 +15294,17 @@ class HlsSegmentedInput extends SegmentedInput {
           const lastSegmentEnd = lastSegment.timestamp + lastSegment.duration;
           const offset = dateTimeSeconds - lastSegmentEnd;
           for (const segment of this.segments) {
-            segment.timestamp += offset;
-            segment.relativeToUnixEpoch = true;
+            segment.unixEpochTimestamp = segment.timestamp + offset;
+            if (offsetTimestampsByDateTime) {
+              segment.timestamp = segment.unixEpochTimestamp;
+            }
           }
-          accumulatedTime += offset;
         }
         lastProgramDateTimeSeconds = dateTimeSeconds;
-        accumulatedTime = dateTimeSeconds;
+        accumulatedUnixTime = dateTimeSeconds;
+        if (offsetTimestampsByDateTime) {
+          accumulatedTime = dateTimeSeconds;
+        }
       } else if (line === TAG_DISCONTINUITY) {
         currentFirstSegment = null;
       } else if (line.startsWith(TAG_TARGETDURATION)) {
@@ -15111,7 +15441,7 @@ class HlsSegmentedInput extends SegmentedInput {
           const stream = createAes128CbcDecryptStream(ciphertextReader, async () => {
             const env_2 = { stack: [], error: void 0, hasError: false };
             try {
-              const keyRef = __addDisposableResource(env_2, await this.input._getSourceCached({ path: encryption.keyUri, isRoot: false }, ENCRYPTION_KEY_CACHE_GROUP), false);
+              const keyRef = __addDisposableResource$1(env_2, await this.input._getSourceCached({ path: encryption.keyUri, isRoot: false }, ENCRYPTION_KEY_CACHE_GROUP), false);
               const keyReader = new Reader(keyRef.source);
               const keySlice = await keyReader.requestSlice(0, AES_128_BLOCK_SIZE);
               if (!keySlice) {
@@ -15123,7 +15453,7 @@ class HlsSegmentedInput extends SegmentedInput {
               env_2.error = e_2;
               env_2.hasError = true;
             } finally {
-              __disposeResources(env_2);
+              __disposeResources$1(env_2);
             }
           }, () => {
             ciphertextRef.free();
@@ -15176,10 +15506,10 @@ class HlsDemuxer extends Demuxer {
   readMetadata() {
     return this.metadataPromise ?? (this.metadataPromise = (async () => {
       assert(this.input._rootSource instanceof PathedSource);
-      const { rootPath } = this.input._rootSource;
       const slice = await this.input._reader.requestEntireFile();
       assert(slice);
       const lines = readAllLines(slice, slice.length, { ignore: canIgnoreLine });
+      const { rootPath } = this.input._rootSource;
       const variantStreams = [];
       const mediaTags = [];
       for (let i = 1; i < lines.length; i++) {
@@ -15646,6 +15976,9 @@ class HlsInputTrackBacking {
   isRelativeToUnixEpoch() {
     return this.delegate(() => this.internalTrack.backingTrack.isRelativeToUnixEpoch());
   }
+  getUnixTimeForTimestamp(timestamp) {
+    return this.delegate(() => this.internalTrack.backingTrack.getUnixTimeForTimestamp(timestamp));
+  }
   getBitrate() {
     return this.internalTrack.peakBitrate;
   }
@@ -15857,7 +16190,8 @@ class Mp4InputFormat extends IsobmffInputFormat {
       slice = await slice;
     if (!slice)
       return false;
-    return readAscii(slice, 4) === "moof";
+    const fourCc = readAscii(slice, 4);
+    return fourCc === "moof" || fourCc === "sidx";
   }
   get name() {
     return "MP4";
@@ -16014,7 +16348,7 @@ class Mp3InputFormat extends InputFormat {
       return true;
     }
     currentPos = firstResult.startPos + firstResult.header.totalSize;
-    const secondResult = await readNextMp3FrameHeader(input._reader, currentPos, currentPos + FRAME_HEADER_SIZE);
+    const secondResult = await readNextMp3FrameHeader(input._reader, currentPos, currentPos + MP3_FRAME_HEADER_SIZE);
     if (!secondResult) {
       return false;
     }
@@ -16086,7 +16420,20 @@ class OggInputFormat extends InputFormat {
 class FlacInputFormat extends InputFormat {
   /** @internal */
   async _canReadInput(input) {
-    let slice = input._reader.requestSlice(0, 4);
+    let currentPos = 0;
+    while (true) {
+      let slice2 = input._reader.requestSlice(currentPos, ID3_V2_HEADER_SIZE);
+      if (slice2 instanceof Promise)
+        slice2 = await slice2;
+      if (!slice2)
+        break;
+      const id3V2Header = readId3V2Header(slice2);
+      if (!id3V2Header) {
+        break;
+      }
+      currentPos = slice2.filePos + id3V2Header.size;
+    }
+    let slice = input._reader.requestSlice(currentPos, 4);
     if (slice instanceof Promise)
       slice = await slice;
     if (!slice)
@@ -16236,7 +16583,73 @@ const validateInputFormatOptions = (options, prefix) => {
       throw new TypeError(`${prefix}.isobmff.resolveKeyId, when provided, must be a function.`);
     }
   }
+  if (options.hls !== void 0) {
+    if (!options.hls || typeof options.hls !== "object") {
+      throw new TypeError(`${prefix}.hls, when provided, must be an object.`);
+    }
+    if (options.hls.offsetTimestampsByDateTime !== void 0 && typeof options.hls.offsetTimestampsByDateTime !== "boolean") {
+      throw new TypeError(`${prefix}.hls.offsetTimestampsByDateTime, when provided, must be a boolean.`);
+    }
+  }
 };
+var __addDisposableResource = function(env, value, async) {
+  if (value !== null && value !== void 0) {
+    if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
+    var dispose, inner;
+    if (async) {
+      if (!Symbol.asyncDispose) throw new TypeError("Symbol.asyncDispose is not defined.");
+      dispose = value[Symbol.asyncDispose];
+    }
+    if (dispose === void 0) {
+      if (!Symbol.dispose) throw new TypeError("Symbol.dispose is not defined.");
+      dispose = value[Symbol.dispose];
+      if (async) inner = dispose;
+    }
+    if (typeof dispose !== "function") throw new TypeError("Object not disposable.");
+    if (inner) dispose = function() {
+      try {
+        inner.call(this);
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    };
+    env.stack.push({ value, dispose, async });
+  } else if (async) {
+    env.stack.push({ async: true });
+  }
+  return value;
+};
+var __disposeResources = /* @__PURE__ */ (function(SuppressedError2) {
+  return function(env) {
+    function fail(e) {
+      env.error = env.hasError ? new SuppressedError2(e, env.error, "An error was suppressed during disposal.") : e;
+      env.hasError = true;
+    }
+    var r, s = 0;
+    function next() {
+      while (r = env.stack.pop()) {
+        try {
+          if (!r.async && s === 1) return s = 0, env.stack.push(r), Promise.resolve().then(next);
+          if (r.dispose) {
+            var result = r.dispose.call(r.value);
+            if (r.async) return s |= 2, Promise.resolve(result).then(next, function(e) {
+              fail(e);
+              return next();
+            });
+          } else s |= 1;
+        } catch (e) {
+          fail(e);
+        }
+      }
+      if (s === 1) return env.hasError ? Promise.reject(env.error) : Promise.resolve();
+      if (env.hasError) throw env.error;
+    }
+    return next();
+  };
+})(typeof SuppressedError === "function" ? SuppressedError : function(error, suppressed, message) {
+  var e = new Error(message);
+  return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+});
 polyfillSymbolDispose();
 let lastVideoGcErrorLog = -Infinity;
 let lastAudioGcErrorLog = -Infinity;
@@ -16246,7 +16659,7 @@ if (typeof FinalizationRegistry !== "undefined") {
     const now = performance.now();
     if (value.type === "video") {
       if (now - lastVideoGcErrorLog >= 1e3) {
-        console.error(`A VideoSample was garbage collected without first being closed. For proper resource management, make sure to call close() on all your VideoSamples as soon as you're done using them.`);
+        Logging._error(`A VideoSample was garbage collected without first being closed. For proper resource management, make sure to call close() on all your VideoSamples as soon as you're done using them.`);
         lastVideoGcErrorLog = now;
       }
       if (typeof VideoFrame !== "undefined" && value.data instanceof VideoFrame) {
@@ -16254,7 +16667,7 @@ if (typeof FinalizationRegistry !== "undefined") {
       }
     } else {
       if (now - lastAudioGcErrorLog >= 1e3) {
-        console.error(`An AudioSample was garbage collected without first being closed. For proper resource management, make sure to call close() on all your AudioSamples as soon as you're done using them.`);
+        Logging._error(`An AudioSample was garbage collected without first being closed. For proper resource management, make sure to call close() on all your AudioSamples as soon as you're done using them.`);
         lastAudioGcErrorLog = now;
       }
       if (typeof AudioData !== "undefined" && value.data instanceof AudioData) {
@@ -16262,6 +16675,12 @@ if (typeof FinalizationRegistry !== "undefined") {
       }
     }
   });
+}
+class VideoSampleResource {
+  constructor() {
+    this._referenceCount = 0;
+    this._lastAllocationBuffer = null;
+  }
 }
 const VIDEO_SAMPLE_PIXEL_FORMATS = [
   // 4:2:0 Y, U, V
@@ -16384,13 +16803,29 @@ class VideoSample {
       if (init.displayWidth !== void 0 !== (init.displayHeight !== void 0)) {
         throw new TypeError("init.displayWidth and init.displayHeight must be either both provided or both omitted.");
       }
-      this._data = toUint8Array(data).slice();
-      this._layout = init.layout ?? createDefaultPlaneLayout(init.format, init.codedWidth, init.codedHeight);
       this.format = init.format;
       this.rotation = init.rotation ?? 0;
       this.timestamp = init.timestamp;
       this.duration = init.duration ?? 0;
-      this.colorSpace = new VideoSampleColorSpace(init.colorSpace);
+      const layout = init.layout ?? createDefaultPlaneLayout(init.format, init.codedWidth, init.codedHeight);
+      let colorSpaceInit = init.colorSpace ?? null;
+      if (colorSpaceInit === null) {
+        if (this.format === "RGBA" || this.format === "RGBX" || this.format === "BGRA" || this.format === "BGRX") {
+          colorSpaceInit = {
+            primaries: "bt709",
+            transfer: "iec61966-2-1",
+            matrix: "rgb",
+            fullRange: true
+          };
+        } else {
+          colorSpaceInit = {
+            primaries: "bt709",
+            transfer: "bt709",
+            matrix: "bt709",
+            fullRange: false
+          };
+        }
+      }
       this.visibleRect = {
         left: init.visibleRect?.left ?? 0,
         top: init.visibleRect?.top ?? 0,
@@ -16401,9 +16836,12 @@ class VideoSample {
         this.squarePixelWidth = this.rotation % 180 === 0 ? init.displayWidth : init.displayHeight;
         this.squarePixelHeight = this.rotation % 180 === 0 ? init.displayHeight : init.displayWidth;
       } else {
-        this.squarePixelWidth = this.codedWidth;
-        this.squarePixelHeight = this.codedHeight;
+        this.squarePixelWidth = this.visibleRect.width;
+        this.squarePixelHeight = this.visibleRect.height;
       }
+      this._data = init._doNotCopy ? toUint8Array(data) : toUint8Array(data).slice();
+      this._layout = layout;
+      this.colorSpace = new VideoSampleColorSpace(colorSpaceInit);
     } else if (typeof VideoFrame !== "undefined" && data instanceof VideoFrame) {
       if (init?.rotation !== void 0 && ![0, 90, 180, 270].includes(init.rotation)) {
         throw new TypeError("init.rotation, when provided, must be 0, 90, 180, or 270.");
@@ -16473,7 +16911,9 @@ class VideoSample {
         // Firefox has VideoFrame glitches with opaque canvases
         willReadFrequently: true
       });
-      assert(context);
+      if (!context) {
+        throw new Error("OffscreenCanvas must have support for the '2d' context in order to create a VideoSample from this data.");
+      }
       context.drawImage(data, 0, 0);
       this._data = canvas;
       this._layout = null;
@@ -16490,9 +16930,53 @@ class VideoSample {
         transfer: "iec61966-2-1",
         fullRange: true
       });
+    } else if (data instanceof VideoSampleResource) {
+      if (!init || typeof init !== "object") {
+        throw new TypeError("init must be an object.");
+      }
+      if (init.rotation !== void 0 && ![0, 90, 180, 270].includes(init.rotation)) {
+        throw new TypeError("init.rotation, when provided, must be 0, 90, 180, or 270.");
+      }
+      if (!Number.isFinite(init.timestamp)) {
+        throw new TypeError("init.timestamp must be a number.");
+      }
+      if (init.duration !== void 0 && (!Number.isFinite(init.duration) || init.duration < 0)) {
+        throw new TypeError("init.duration, when provided, must be a non-negative number.");
+      }
+      this._data = data;
+      data._referenceCount++;
+      this.format = data.getFormat();
+      if (this.format !== null && !VIDEO_SAMPLE_PIXEL_FORMATS.includes(this.format)) {
+        throw new TypeError("getFormat() must return a VideoSamplePixelFormat or null.");
+      }
+      this.visibleRect = {
+        left: 0,
+        top: 0,
+        width: data.getCodedWidth(),
+        height: data.getCodedHeight()
+      };
+      if (!Number.isInteger(this.visibleRect.width) || this.visibleRect.width <= 0) {
+        throw new TypeError("getCodedWidth() must return a positive integer.");
+      }
+      if (!Number.isInteger(this.visibleRect.height) || this.visibleRect.height <= 0) {
+        throw new TypeError("getCodedHeight() must return a positive integer.");
+      }
+      this.squarePixelWidth = data.getSquarePixelWidth();
+      if (!Number.isInteger(this.squarePixelWidth) || this.squarePixelWidth <= 0) {
+        throw new TypeError("getSquarePixelWidth() must return a positive integer.");
+      }
+      this.squarePixelHeight = data.getSquarePixelHeight();
+      if (!Number.isInteger(this.squarePixelHeight) || this.squarePixelHeight <= 0) {
+        throw new TypeError("getSquarePixelHeight() must return a positive integer.");
+      }
+      this.rotation = init.rotation ?? 0;
+      this.timestamp = init.timestamp;
+      this.duration = init.duration ?? 0;
+      this.colorSpace = data.getColorSpace();
     } else {
-      throw new TypeError("Invalid data type: Must be a BufferSource or CanvasImageSource.");
+      throw new TypeError("Invalid data type: Must be a BufferSource, CanvasImageSource, or VideoSampleResource.");
     }
+    this.encodeOptions = init?.encodeOptions ?? {};
     this.pixelAspectRatio = simplifyRational({
       num: this.squarePixelWidth * this.codedHeight,
       den: this.squarePixelHeight * this.codedWidth
@@ -16505,11 +16989,19 @@ class VideoSample {
       throw new Error("VideoSample is closed.");
     }
     assert(this._data !== null);
-    if (isVideoFrame(this._data)) {
+    if (this._data instanceof VideoSampleResource) {
+      return new VideoSample(this._data, {
+        timestamp: this.timestamp,
+        duration: this.duration,
+        rotation: this.rotation,
+        encodeOptions: this.encodeOptions
+      });
+    } else if (isVideoFrame(this._data)) {
       return new VideoSample(this._data.clone(), {
         timestamp: this.timestamp,
         duration: this.duration,
-        rotation: this.rotation
+        rotation: this.rotation,
+        encodeOptions: this.encodeOptions
       });
     } else if (this._data instanceof Uint8Array) {
       assert(this._layout);
@@ -16524,7 +17016,10 @@ class VideoSample {
         rotation: this.rotation,
         visibleRect: this.visibleRect,
         displayWidth: this.displayWidth,
-        displayHeight: this.displayHeight
+        displayHeight: this.displayHeight,
+        encodeOptions: this.encodeOptions,
+        // It's already been copied, if we copy it again we make the clone unnecessarily expensive
+        _doNotCopy: true
       });
     } else {
       return new VideoSample(this._data, {
@@ -16537,7 +17032,8 @@ class VideoSample {
         rotation: this.rotation,
         visibleRect: this.visibleRect,
         displayWidth: this.displayWidth,
-        displayHeight: this.displayHeight
+        displayHeight: this.displayHeight,
+        encodeOptions: this.encodeOptions
       });
     }
   }
@@ -16550,7 +17046,12 @@ class VideoSample {
       return;
     }
     finalizationRegistry?.unregister(this);
-    if (isVideoFrame(this._data)) {
+    if (this._data instanceof VideoSampleResource) {
+      this._data._referenceCount--;
+      if (this._data._referenceCount === 0) {
+        this._data.close();
+      }
+    } else if (isVideoFrame(this._data)) {
       this._data.close();
     } else {
       this._data = null;
@@ -16558,35 +17059,24 @@ class VideoSample {
     this._closed = true;
   }
   /**
-   * Returns the number of bytes required to hold this video sample's pixel data. Throws if `format` is `null`.
+   * Returns the number of bytes required to hold this video sample's pixel data.
    */
   allocationSize(options = {}) {
     validateVideoFrameCopyToOptions(options);
     if (this._closed) {
       throw new Error("VideoSample is closed.");
     }
-    if (this.format === null) {
-      throw new Error("Cannot get allocation size when format is null. Sorry!");
-    }
-    assert(this._data !== null);
-    if (!isVideoFrame(this._data)) {
-      if (options.colorSpace || options.format && options.format !== this.format || options.layout || options.rect) {
-        const videoFrame = this.toVideoFrame();
-        const size = videoFrame.allocationSize(options);
-        videoFrame.close();
-        return size;
-      }
+    if ((options.format ?? this.format) == null) {
+      throw new Error("Cannot get allocation size when format is null.");
     }
     if (isVideoFrame(this._data)) {
       return this._data.allocationSize(options);
-    } else if (this._data instanceof Uint8Array) {
-      return this._data.byteLength;
-    } else {
-      return this.codedWidth * this.codedHeight * 4;
     }
+    const combinedLayout = ParseVideoFrameCopyToOptions(this, options);
+    return combinedLayout.allocationSize;
   }
   /**
-   * Copies this video sample's pixel data to an ArrayBuffer or ArrayBufferView. Throws if `format` is `null`.
+   * Copies this video sample's pixel data to an ArrayBuffer or ArrayBufferView.
    * @returns The byte layout of the planes of the copied data.
    */
   async copyTo(destination, options = {}) {
@@ -16597,37 +17087,127 @@ class VideoSample {
     if (this._closed) {
       throw new Error("VideoSample is closed.");
     }
-    if (this.format === null) {
-      throw new Error("Cannot copy video sample data when format is null. Sorry!");
+    if ((options.format ?? this.format) == null) {
+      throw new Error("Cannot copy video sample data when format is null.");
     }
     assert(this._data !== null);
-    if (!isVideoFrame(this._data)) {
-      if (options.colorSpace || options.format && options.format !== this.format || options.layout || options.rect) {
-        const videoFrame = this.toVideoFrame();
-        const layout = await videoFrame.copyTo(destination, options);
-        videoFrame.close();
-        return layout;
-      }
-    }
     if (isVideoFrame(this._data)) {
       return this._data.copyTo(destination, options);
+    }
+    if (options.format && !["RGBA", "RGBX", "BGRA", "BGRX"].includes(this.format) && ["RGBA", "RGBX", "BGRA", "BGRX"].includes(options.format)) {
+      if (this._data instanceof VideoSampleResource) {
+        const env_1 = { stack: [], error: void 0, hasError: false };
+        try {
+          const rgbSample = __addDisposableResource(env_1, await this._data.toRgbSample({
+            timestamp: this.timestamp,
+            duration: this.duration,
+            rotation: this.rotation
+          }, options.colorSpace ?? "srgb"), false);
+          if (!(rgbSample instanceof VideoSample)) {
+            throw new TypeError("toRgbSample() must return a VideoSample.");
+          }
+          if (!["RGBA", "RGBX", "BGRA", "BGRX"].includes(rgbSample.format)) {
+            throw new Error(`Sample returned by toRgbSample was expected to have an RGB format, got '${rgbSample.format}' instead.`);
+          }
+          return await rgbSample.copyTo(destination, options);
+        } catch (e_1) {
+          env_1.error = e_1;
+          env_1.hasError = true;
+        } finally {
+          __disposeResources(env_1);
+        }
+      } else {
+        if (typeof VideoFrame === "undefined") {
+          throw new Error("For this sample, converting from a non-RGB to an RGB format requires VideoFrame to be defined.");
+        }
+        const tempFrame = this.toVideoFrame();
+        const result = await tempFrame.copyTo(destination, options);
+        tempFrame.close();
+        return result;
+      }
+    }
+    const combinedLayout = ParseVideoFrameCopyToOptions(this, options);
+    assert(this.format);
+    const destBytes = toUint8Array(destination);
+    if (destBytes.byteLength < combinedLayout.allocationSize) {
+      throw new TypeError(`Destination buffer too small. Required: ${combinedLayout.allocationSize}, Available: ${destBytes.byteLength}`);
+    }
+    const planeConfigs = getPlaneConfigs(this.format);
+    let dataPlanes;
+    if (this._data instanceof VideoSampleResource) {
+      let result = this._data.getDataPlanes();
+      if (result instanceof Promise)
+        result = await result;
+      if (!Array.isArray(result) || result.some((x) => !(x.data instanceof Uint8Array) || !Number.isInteger(x.stride) || x.stride < 0)) {
+        throw new TypeError('getDataPlanes() must return an array of objects with a Uint8Array "data" property and a non-negative integer "stride" property.');
+      }
+      dataPlanes = result;
     } else if (this._data instanceof Uint8Array) {
       assert(this._layout);
-      const dest = toUint8Array(destination);
-      dest.set(this._data);
-      return this._layout;
+      assert(this._layout.length === planeConfigs.length);
+      dataPlanes = this._layout.map((planeLayout, i) => {
+        const height = Math.ceil(this.codedHeight / planeConfigs[i].heightDivisor);
+        return {
+          data: this._data.subarray(planeLayout.offset, planeLayout.offset + planeLayout.stride * height),
+          stride: planeLayout.stride
+        };
+      });
     } else {
       const canvas = this._data;
       const context = canvas.getContext("2d");
       assert(context);
       const imageData = context.getImageData(0, 0, this.codedWidth, this.codedHeight);
-      const dest = toUint8Array(destination);
-      dest.set(imageData.data);
-      return [{
-        offset: 0,
+      dataPlanes = [{
+        data: toUint8Array(imageData.data),
         stride: 4 * this.codedWidth
       }];
     }
+    const planeLayouts = [];
+    const numPlanes = planeConfigs.length;
+    for (let planeIndex = 0; planeIndex < numPlanes; planeIndex++) {
+      const computedLayout = combinedLayout.computedLayouts[planeIndex];
+      const sourceStride = dataPlanes[planeIndex].stride;
+      const sourceData = dataPlanes[planeIndex].data;
+      let sourceOffset = computedLayout.sourceTop * sourceStride;
+      sourceOffset += computedLayout.sourceLeftBytes;
+      let destinationOffset = computedLayout.destinationOffset;
+      const rowBytes = computedLayout.sourceWidthBytes;
+      const layout = {
+        offset: destinationOffset,
+        stride: computedLayout.destinationStride
+      };
+      for (let row = 0; row < computedLayout.sourceHeight; row++) {
+        if (sourceOffset + rowBytes > sourceData.byteLength) {
+          throw new Error(`Source buffer OOB read.`);
+        }
+        if (destinationOffset + rowBytes > destBytes.byteLength) {
+          throw new Error(`Destination buffer OOB write.`);
+        }
+        const srcSub = sourceData.subarray(sourceOffset, sourceOffset + rowBytes);
+        destBytes.set(srcSub, destinationOffset);
+        sourceOffset += sourceStride;
+        destinationOffset += computedLayout.destinationStride;
+      }
+      planeLayouts.push(layout);
+    }
+    if (options.format !== void 0) {
+      const needsRgbConversion = this.format.startsWith("RGB") !== options.format.startsWith("RGB");
+      const needsAlphaConversion = this.format.includes("X") && options.format.includes("A");
+      if (needsRgbConversion || needsAlphaConversion) {
+        for (let i = 0; i < combinedLayout.allocationSize; i += 4) {
+          if (needsRgbConversion) {
+            const r = destBytes[i];
+            const b = destBytes[i + 2];
+            destBytes[i] = b;
+            destBytes[i + 2] = r;
+          }
+          if (needsAlphaConversion) {
+            destBytes[i + 3] = 255;
+          }
+        }
+      }
+    }
+    return planeLayouts;
   }
   /**
    * Converts this video sample to a VideoFrame for use with the WebCodecs API. The VideoFrame returned by this
@@ -16638,20 +17218,61 @@ class VideoSample {
       throw new Error("VideoSample is closed.");
     }
     assert(this._data !== null);
-    if (isVideoFrame(this._data)) {
+    if (this._data instanceof VideoSampleResource) {
+      if (this.format === null) {
+        throw new Error("Cannot convert a VideoSampleResource-backed VideoSample to VideoFrame if format is null.");
+      }
+      const planes = this._data.getDataPlanes();
+      if (planes instanceof Promise) {
+        throw new Error("Cannot convert a VideoSampleResource-backed VideoSample to VideoFrame if getDataPlanes() returns a promise.");
+      }
+      const size = planes.reduce((a, b) => a + b.data.byteLength, 0);
+      const buffer = new Uint8Array(size);
+      let offset = 0;
+      const offsets = [];
+      for (const plane of planes) {
+        buffer.set(plane.data, offset);
+        offsets.push(offset);
+        offset += plane.data.byteLength;
+      }
+      return new VideoFrame(buffer, {
+        format: this.format,
+        layout: planes.map((x, i) => ({
+          offset: offsets[i],
+          stride: x.stride
+        })),
+        codedWidth: this.codedWidth,
+        codedHeight: this.codedHeight,
+        timestamp: this.microsecondTimestamp,
+        duration: this.microsecondDuration,
+        colorSpace: this.colorSpace,
+        visibleRect: this.visibleRect,
+        displayWidth: this.squarePixelWidth,
+        // Not display* since we're not passing rotation
+        displayHeight: this.squarePixelHeight
+      });
+    } else if (isVideoFrame(this._data)) {
       return new VideoFrame(this._data, {
         timestamp: this.microsecondTimestamp,
         duration: this.microsecondDuration || void 0
         // Drag 0 duration to undefined, glitches some codecs
       });
     } else if (this._data instanceof Uint8Array) {
+      assert(this._layout);
       return new VideoFrame(this._data, {
         format: this.format,
         codedWidth: this.codedWidth,
+        // This is technically wrong! codedWidth is a lie technically. But, since
         codedHeight: this.codedHeight,
+        // we pass the layout (which contains the true coded width), we're good.
+        layout: this._layout,
         timestamp: this.microsecondTimestamp,
         duration: this.microsecondDuration || void 0,
-        colorSpace: this.colorSpace
+        colorSpace: this.colorSpace,
+        visibleRect: this.visibleRect,
+        displayWidth: this.squarePixelWidth,
+        // Not display* since we're not passing rotation
+        displayHeight: this.squarePixelHeight
       });
     } else {
       return new VideoFrame(this._data, {
@@ -16756,8 +17377,9 @@ class VideoSample {
     const canvasHeight = context.canvas.height;
     const rotation = options.rotation ?? this.rotation;
     const [rotatedWidth, rotatedHeight] = rotation % 180 === 0 ? [this.squarePixelWidth, this.squarePixelHeight] : [this.squarePixelHeight, this.squarePixelWidth];
-    if (options.crop) {
-      clampCropRectangle(options.crop, rotatedWidth, rotatedHeight);
+    let finalCrop = options.crop;
+    if (finalCrop) {
+      finalCrop = clampCropRectangle(finalCrop, rotatedWidth, rotatedHeight);
     }
     let dx;
     let dy;
@@ -16814,7 +17436,7 @@ class VideoSample {
    * Converts this video sample to a
    * [`CanvasImageSource`](https://udn.realityripple.com/docs/Web/API/CanvasImageSource) for drawing to a canvas.
    *
-   * You must use the value returned by this method immediately, as any VideoFrame created internally will
+   * You must use the value returned by this method immediately, as any VideoFrame created internally may
    * automatically be closed in the next microtask.
    */
   toCanvasImageSource() {
@@ -16822,13 +17444,148 @@ class VideoSample {
       throw new Error("VideoSample is closed.");
     }
     assert(this._data !== null);
-    if (this._data instanceof Uint8Array) {
+    if (this._data instanceof VideoSampleResource || this._data instanceof Uint8Array) {
       const videoFrame = this.toVideoFrame();
       queueMicrotask(() => videoFrame.close());
       return videoFrame;
     } else {
       return this._data;
     }
+  }
+  /**
+   * Transform this video sample to a new video sample given the options. Can be used to resize, rotate, and crop
+   * the sample.
+   *
+   * In non-browser environments, this method will not work by default. To make it work, register a custom
+   * transformer function via {@link registerVideoSampleTransformer}.
+   */
+  async transform(options) {
+    if (!options || typeof options !== "object") {
+      throw new TypeError("options must be an object.");
+    }
+    if (options.width !== void 0 && (!Number.isInteger(options.width) || options.width <= 0)) {
+      throw new TypeError("options.width, when provided, must be a positive integer.");
+    }
+    if (options.height !== void 0 && (!Number.isInteger(options.height) || options.height <= 0)) {
+      throw new TypeError("options.height, when provided, must be a positive integer.");
+    }
+    if (options.roundDimensionsTo !== void 0 && (!Number.isInteger(options.roundDimensionsTo) || options.roundDimensionsTo <= 0)) {
+      throw new TypeError("options.roundDimensionsTo, when provided, must be a positive integer.");
+    }
+    if (options.fit !== void 0 && !["fill", "contain", "cover"].includes(options.fit)) {
+      throw new TypeError('options.fit, when provided, must be one of "fill", "contain", or "cover".');
+    }
+    if (options.width !== void 0 && options.height !== void 0 && options.fit === void 0) {
+      throw new TypeError("When both options.width and options.height are provided, options.fit must also be provided.");
+    }
+    if (options.rotate !== void 0 && ![0, 90, 180, 270].includes(options.rotate)) {
+      throw new TypeError("options.rotate, when provided, must be 0, 90, 180 or 270.");
+    }
+    if (options.crop !== void 0) {
+      validateCropRectangle(options.crop, "options.");
+    }
+    if (options.alpha !== void 0 && !["keep", "discard"].includes(options.alpha)) {
+      throw new TypeError("options.alpha, when provided, must be 'keep' or 'discard'.");
+    }
+    const rotation = normalizeRotation(this.rotation + (options.rotate ?? 0));
+    const [rotatedWidth, rotatedHeight] = rotation % 180 === 0 ? [this.squarePixelWidth, this.squarePixelHeight] : [this.squarePixelHeight, this.squarePixelWidth];
+    let finalCrop = options.crop;
+    if (finalCrop) {
+      finalCrop = clampCropRectangle(finalCrop, rotatedWidth, rotatedHeight);
+    }
+    const cropWidth = finalCrop ? finalCrop.width : rotatedWidth;
+    const cropHeight = finalCrop ? finalCrop.height : rotatedHeight;
+    const originalAspectRatio = cropWidth / cropHeight;
+    let targetWidth;
+    let targetHeight;
+    if (options.width !== void 0 && options.height === void 0) {
+      targetWidth = options.width;
+      targetHeight = targetWidth / originalAspectRatio;
+    } else if (options.width === void 0 && options.height !== void 0) {
+      targetHeight = options.height;
+      targetWidth = targetHeight * originalAspectRatio;
+    } else if (options.width !== void 0 && options.height !== void 0) {
+      targetWidth = options.width;
+      targetHeight = options.height;
+    } else {
+      targetWidth = cropWidth;
+      targetHeight = cropHeight;
+    }
+    targetWidth = roundToMultiple(targetWidth, options.roundDimensionsTo ?? 1);
+    targetHeight = roundToMultiple(targetHeight, options.roundDimensionsTo ?? 1);
+    const description = {
+      width: targetWidth,
+      height: targetHeight,
+      fit: options.fit ?? "fill",
+      rotation,
+      crop: finalCrop ?? {
+        left: 0,
+        top: 0,
+        width: rotatedWidth,
+        height: rotatedHeight
+      },
+      alpha: options.alpha ?? "keep"
+    };
+    for (const transformer of registeredVideoSampleTransformers) {
+      let result = transformer(this, description);
+      if (result instanceof Promise)
+        result = await result;
+      if (result !== null) {
+        return result;
+      }
+    }
+    let canvas = null;
+    let canvasIsNew = false;
+    for (const entry of transformationCanvasCache) {
+      if (entry.canvas.width === description.width && entry.canvas.height === description.height) {
+        canvas = entry.canvas;
+        entry.age = transformationCanvasCacheNextAge++;
+        break;
+      }
+    }
+    if (canvas === null) {
+      if (typeof OffscreenCanvas !== "undefined") {
+        canvas = new OffscreenCanvas(description.width, description.height);
+      } else {
+        if (typeof window === "undefined" || typeof document === "undefined") {
+          throw new Error("Cannot transform VideoSamples in this environment. Either run in an environment with OffscreenCanvas or HTMLCanvasElement, or supply a custom VideoSample transformer using registerVideoSampleTransformer().");
+        }
+        canvas = document.createElement("canvas");
+        canvas.width = description.width;
+        canvas.height = description.height;
+      }
+      canvasIsNew = true;
+      if (transformationCanvasCache.length >= TRANSFORMATION_CANVAS_CACHE_MAX_SIZE) {
+        transformationCanvasCache.splice(arrayArgmin(transformationCanvasCache, (x) => x.age), 1);
+      }
+      transformationCanvasCache.push({
+        canvas,
+        age: transformationCanvasCacheNextAge++
+      });
+    }
+    const context = canvas.getContext("2d", {
+      alpha: true
+    });
+    if (!context) {
+      throw new Error("The '2d' canvas context is required to transform VideoSamples. Register a custom transformer using registerVideoSampleTransformer to work around this limitation.");
+    }
+    if (description.alpha === "discard") {
+      context.fillStyle = "black";
+      context.fillRect(0, 0, description.width, description.height);
+    } else if (!canvasIsNew) {
+      context.clearRect(0, 0, description.width, description.height);
+    }
+    this.drawWithFit(context, {
+      fit: description.fit,
+      rotation: description.rotation,
+      crop: description.crop
+    });
+    return new VideoSample(canvas, {
+      timestamp: this.timestamp,
+      duration: this.duration,
+      rotation: 0
+      // Any previous rotation is now baked in
+    });
   }
   /** Sets the rotation metadata of this video sample. */
   setRotation(newRotation) {
@@ -16851,11 +17608,22 @@ class VideoSample {
     }
     this.duration = newDuration;
   }
+  /** Sets the encode options used when this sample is passed to an encoder. */
+  setEncodeOptions(newEncodeOptions) {
+    if (!newEncodeOptions || typeof newEncodeOptions !== "object") {
+      throw new TypeError("newEncodeOptions must be an object.");
+    }
+    this.encodeOptions = newEncodeOptions;
+  }
   /** Calls `.close()`. */
   [Symbol.dispose]() {
     this.close();
   }
 }
+const registeredVideoSampleTransformers = [];
+const TRANSFORMATION_CANVAS_CACHE_MAX_SIZE = 3;
+const transformationCanvasCache = [];
+let transformationCanvasCacheNextAge = 0;
 class VideoSampleColorSpace {
   /** Creates a new VideoSampleColorSpace. */
   constructor(init) {
@@ -17045,7 +17813,128 @@ const getPlaneConfigs = (format) => {
       assert(false);
   }
 };
+const ParseVideoFrameCopyToOptions = (sample, options) => {
+  const defaultRect = {
+    left: 0,
+    top: 0,
+    width: sample.codedWidth,
+    height: sample.codedHeight
+  };
+  const overrideRect = options.rect;
+  const parsedRect = ParseVisibleRect(defaultRect, overrideRect, sample.codedWidth, sample.codedHeight, sample.format);
+  const optLayout = options.layout;
+  let format;
+  if (!options.format || options.format === sample.format) {
+    format = sample.format;
+  } else if (["RGBA", "RGBX", "BGRA", "BGRX"].includes(options.format)) {
+    format = options.format;
+  } else {
+    throw new Error("NotSupportedError: Invalid destination format.");
+  }
+  return ComputeLayoutAndAllocationSize(parsedRect, format, optLayout);
+};
+const ParseVisibleRect = (defaultRect, overrideRect, codedWidth, codedHeight, format) => {
+  const sourceRect = { ...defaultRect };
+  if (overrideRect !== void 0) {
+    if (overrideRect.width === 0 || overrideRect.height === 0) {
+      throw new TypeError("visibleRect dimensions cannot be zero.");
+    }
+    if ((overrideRect.x || 0) + (overrideRect.width || 0) > codedWidth) {
+      throw new TypeError("visibleRect exceeds codedWidth.");
+    }
+    if ((overrideRect.y || 0) + (overrideRect.height || 0) > codedHeight) {
+      throw new TypeError("visibleRect exceeds codedHeight.");
+    }
+    sourceRect.x = overrideRect.x || 0;
+    sourceRect.y = overrideRect.y || 0;
+    sourceRect.width = overrideRect.width || 0;
+    sourceRect.height = overrideRect.height || 0;
+  }
+  const validAlignment = VerifyRectOffsetAlignment(format, sourceRect);
+  if (!validAlignment) {
+    throw new TypeError("visibleRect alignment is invalid for the format.");
+  }
+  return sourceRect;
+};
+const VerifyRectOffsetAlignment = (format, rect) => {
+  if (format === null)
+    return true;
+  const planes = getPlaneConfigs(format);
+  for (let planeIndex = 0; planeIndex < planes.length; planeIndex++) {
+    const plane = planes[planeIndex];
+    const sampleWidth = plane.widthDivisor;
+    const sampleHeight = plane.heightDivisor;
+    if ((rect.x || 0) % sampleWidth !== 0)
+      return false;
+    if ((rect.y || 0) % sampleHeight !== 0)
+      return false;
+  }
+  return true;
+};
+const ComputeLayoutAndAllocationSize = (parsedRect, format, layout) => {
+  const planes = getPlaneConfigs(format);
+  const numPlanes = planes.length;
+  if (layout !== void 0 && layout.length !== numPlanes) {
+    throw new TypeError(`Layout must have ${numPlanes} planes.`);
+  }
+  let minAllocationSize = 0;
+  const computedLayouts = [];
+  const endOffsets = [];
+  for (let planeIndex = 0; planeIndex < numPlanes; planeIndex++) {
+    const plane = planes[planeIndex];
+    const sampleBytes = plane.sampleBytes;
+    const sampleWidth = plane.widthDivisor;
+    const sampleHeight = plane.heightDivisor;
+    const computedLayout = {
+      destinationOffset: 0,
+      destinationStride: 0,
+      sourceTop: 0,
+      sourceHeight: 0,
+      sourceLeftBytes: 0,
+      sourceWidthBytes: 0
+    };
+    computedLayout.sourceTop = Math.ceil(Math.trunc(parsedRect.y || 0) / sampleHeight);
+    computedLayout.sourceHeight = Math.ceil(Math.trunc(parsedRect.height || 0) / sampleHeight);
+    computedLayout.sourceLeftBytes = Math.floor(Math.trunc(parsedRect.x || 0) / sampleWidth) * sampleBytes;
+    computedLayout.sourceWidthBytes = Math.floor(Math.trunc(parsedRect.width || 0) / sampleWidth) * sampleBytes;
+    if (layout !== void 0) {
+      const planeLayout = layout[planeIndex];
+      if (planeLayout.stride < computedLayout.sourceWidthBytes) {
+        throw new TypeError(`Stride for plane ${planeIndex} is too small.`);
+      }
+      computedLayout.destinationOffset = planeLayout.offset;
+      computedLayout.destinationStride = planeLayout.stride;
+    } else {
+      computedLayout.destinationOffset = minAllocationSize;
+      computedLayout.destinationStride = computedLayout.sourceWidthBytes;
+    }
+    const planeSize = computedLayout.destinationStride * computedLayout.sourceHeight;
+    const planeEnd = planeSize + computedLayout.destinationOffset;
+    if (planeEnd > 4294967295) {
+      throw new TypeError("Allocation size exceeds limit.");
+    }
+    endOffsets.push(planeEnd);
+    minAllocationSize = Math.max(minAllocationSize, planeEnd);
+    for (let earlierPlaneIndex = 0; earlierPlaneIndex < planeIndex; earlierPlaneIndex++) {
+      const earlierLayout = computedLayouts[earlierPlaneIndex];
+      if (endOffsets[planeIndex] <= earlierLayout.destinationOffset || endOffsets[earlierPlaneIndex] <= computedLayout.destinationOffset) {
+        continue;
+      }
+      throw new TypeError("Planes overlap.");
+    }
+    computedLayouts.push(computedLayout);
+  }
+  return {
+    allocationSize: minAllocationSize,
+    computedLayouts
+  };
+};
 const AUDIO_SAMPLE_FORMATS = /* @__PURE__ */ new Set(["f32", "f32-planar", "s16", "s16-planar", "s32", "s32-planar", "u8", "u8-planar"]);
+class AudioSampleResource {
+  constructor() {
+    this._referenceCount = 0;
+  }
+}
 class AudioSample {
   /** The presentation timestamp of the sample in microseconds. */
   get microsecondTimestamp() {
@@ -17055,11 +17944,6 @@ class AudioSample {
   get microsecondDuration() {
     return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
   }
-  /**
-   * Creates a new {@link AudioSample}, either from an existing
-   * [`AudioData`](https://developer.mozilla.org/en-US/docs/Web/API/AudioData) or from raw bytes specified in
-   * {@link AudioSampleInit}.
-   */
   constructor(init) {
     this._closed = false;
     if (isAudioData(init)) {
@@ -17073,6 +17957,30 @@ class AudioSample {
       this.numberOfChannels = init.numberOfChannels;
       this.timestamp = init.timestamp / 1e6;
       this.duration = init.numberOfFrames / init.sampleRate;
+    } else if (init instanceof AudioSampleResource) {
+      this._data = init;
+      init._referenceCount++;
+      this.format = init.getFormat();
+      if (!AUDIO_SAMPLE_FORMATS.has(this.format)) {
+        throw new TypeError("getFormat() must return an AudioSampleFormat.");
+      }
+      this.sampleRate = init.getSampleRate();
+      if (!Number.isInteger(this.sampleRate) || this.sampleRate <= 0) {
+        throw new TypeError("getSampleRate() must return a positive integer.");
+      }
+      this.numberOfFrames = init.getNumberOfFrames();
+      if (!Number.isInteger(this.numberOfFrames) || this.numberOfFrames < 0) {
+        throw new TypeError("getNumberOfFrames() must return a non-negative integer.");
+      }
+      this.numberOfChannels = init.getNumberOfChannels();
+      if (!Number.isInteger(this.numberOfChannels) || this.numberOfChannels <= 0) {
+        throw new TypeError("getNumberOfChannels() must return a positive integer.");
+      }
+      this.timestamp = init.getTimestamp();
+      if (!Number.isFinite(this.timestamp)) {
+        throw new TypeError("getTimestamp() must return a finite number.");
+      }
+      this.duration = this.numberOfFrames / this.sampleRate;
     } else {
       if (!init || typeof init !== "object") {
         throw new TypeError("Invalid AudioDataInit: must be an object.");
@@ -17178,7 +18086,8 @@ class AudioSample {
     if (this._closed) {
       throw new Error("AudioSample is closed.");
     }
-    const { planeIndex, format, frameCount: optFrameCount, frameOffset: optFrameOffset } = options;
+    const { format, frameCount: optFrameCount, frameOffset: optFrameOffset } = options;
+    let { planeIndex } = options;
     const srcFormat = this.format;
     const destFormat = format ?? this.format;
     if (!destFormat)
@@ -17220,11 +18129,40 @@ class AudioSample {
         });
       }
     } else {
-      const uint8Data = this._data;
-      const srcView = toDataView(uint8Data);
       const readFn = getReadFunction(srcFormat);
       const srcBytesPerSample = getBytesPerSample(srcFormat);
       const srcIsPlanar = formatIsPlanar(srcFormat);
+      let uint8Data;
+      if (this._data instanceof AudioSampleResource) {
+        const getDataPlaneValidated = (index) => {
+          const result = this._data.getDataPlane(index);
+          if (!(result instanceof Uint8Array)) {
+            throw new TypeError("getDataPlane() must return a Uint8Array.");
+          }
+          const expectedSize = numFrames * srcBytesPerSample * (srcIsPlanar ? 1 : numChannels);
+          if (result.byteLength !== expectedSize) {
+            throw new TypeError(`Data plane ${index} has invalid size. Expected exactly ${expectedSize} bytes, got ${result.byteLength} bytes.`);
+          }
+          return result;
+        };
+        if (srcIsPlanar) {
+          if (destIsPlanar) {
+            uint8Data = getDataPlaneValidated(planeIndex);
+            planeIndex = 0;
+          } else {
+            uint8Data = new Uint8Array(numFrames * srcBytesPerSample * numChannels);
+            for (let ch = 0; ch < numChannels; ch++) {
+              const planeData = getDataPlaneValidated(ch);
+              uint8Data.set(planeData, ch * numFrames * srcBytesPerSample);
+            }
+          }
+        } else {
+          uint8Data = getDataPlaneValidated(0);
+        }
+      } else {
+        uint8Data = this._data;
+      }
+      const srcView = toDataView(uint8Data);
       for (let i = 0; i < copyFrameCount; i++) {
         if (destIsPlanar) {
           const destOffset = i * destBytesPerSample;
@@ -17258,7 +18196,11 @@ class AudioSample {
     if (this._closed) {
       throw new Error("AudioSample is closed.");
     }
-    if (isAudioData(this._data)) {
+    if (this._data instanceof AudioSampleResource) {
+      const sample = new AudioSample(this._data);
+      sample.setTimestamp(this.timestamp);
+      return sample;
+    } else if (isAudioData(this._data)) {
       const sample = new AudioSample(this._data.clone());
       sample.setTimestamp(this.timestamp);
       return sample;
@@ -17274,6 +18216,65 @@ class AudioSample {
     }
   }
   /**
+   * Returns a new {@link AudioSample} containing only the frames in the range [startSample, endSample). Both bounds
+   * must lie within this sample's range of frames. The returned sample's timestamp is shifted to match the start of
+   * the trimmed section.
+   */
+  trim(startSample, endSample = this.numberOfFrames) {
+    if (!Number.isInteger(startSample) || startSample < 0) {
+      throw new TypeError("startSample must be a non-negative integer.");
+    }
+    if (!Number.isInteger(endSample) || endSample < 0) {
+      throw new TypeError("endSample must be a non-negative integer.");
+    }
+    if (startSample > this.numberOfFrames) {
+      throw new RangeError("startSample out of range.");
+    }
+    if (endSample > this.numberOfFrames) {
+      throw new RangeError("endSample out of range.");
+    }
+    if (endSample < startSample) {
+      throw new RangeError("endSample must not be less than startSample.");
+    }
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    const frameCount = endSample - startSample;
+    const bytesPerSample = getBytesPerSample(this.format);
+    let data;
+    if (formatIsPlanar(this.format)) {
+      const planeSize = frameCount * bytesPerSample;
+      data = new Uint8Array(planeSize * this.numberOfChannels);
+      if (frameCount > 0) {
+        for (let i = 0; i < this.numberOfChannels; i++) {
+          this.copyTo(data.subarray(i * planeSize, (i + 1) * planeSize), {
+            planeIndex: i,
+            format: this.format,
+            frameOffset: startSample,
+            frameCount
+          });
+        }
+      }
+    } else {
+      data = new Uint8Array(frameCount * this.numberOfChannels * bytesPerSample);
+      if (frameCount > 0) {
+        this.copyTo(data, {
+          planeIndex: 0,
+          format: this.format,
+          frameOffset: startSample,
+          frameCount
+        });
+      }
+    }
+    return new AudioSample({
+      data,
+      format: this.format,
+      sampleRate: this.sampleRate,
+      numberOfChannels: this.numberOfChannels,
+      timestamp: this.timestamp + startSample / this.sampleRate
+    });
+  }
+  /**
    * Closes this audio sample, releasing held resources. Audio samples should be closed as soon as they are not
    * needed anymore.
    */
@@ -17282,7 +18283,12 @@ class AudioSample {
       return;
     }
     finalizationRegistry?.unregister(this);
-    if (isAudioData(this._data)) {
+    if (this._data instanceof AudioSampleResource) {
+      this._data._referenceCount--;
+      if (this._data._referenceCount === 0) {
+        this._data.close();
+      }
+    } else if (isAudioData(this._data)) {
       this._data.close();
     } else {
       this._data = new Uint8Array(0);
@@ -17297,36 +18303,13 @@ class AudioSample {
     if (this._closed) {
       throw new Error("AudioSample is closed.");
     }
-    if (isAudioData(this._data)) {
+    if (this._data instanceof AudioSampleResource) {
+      return this._createAudioDataFromData();
+    } else if (isAudioData(this._data)) {
       if (this._data.timestamp === this.microsecondTimestamp) {
         return this._data.clone();
       } else {
-        if (formatIsPlanar(this.format)) {
-          const size = this.allocationSize({ planeIndex: 0, format: this.format });
-          const data = new ArrayBuffer(size * this.numberOfChannels);
-          for (let i = 0; i < this.numberOfChannels; i++) {
-            this.copyTo(new Uint8Array(data, i * size, size), { planeIndex: i, format: this.format });
-          }
-          return new AudioData({
-            format: this.format,
-            sampleRate: this.sampleRate,
-            numberOfFrames: this.numberOfFrames,
-            numberOfChannels: this.numberOfChannels,
-            timestamp: this.microsecondTimestamp,
-            data
-          });
-        } else {
-          const data = new ArrayBuffer(this.allocationSize({ planeIndex: 0, format: this.format }));
-          this.copyTo(data, { planeIndex: 0, format: this.format });
-          return new AudioData({
-            format: this.format,
-            sampleRate: this.sampleRate,
-            numberOfFrames: this.numberOfFrames,
-            numberOfChannels: this.numberOfChannels,
-            timestamp: this.microsecondTimestamp,
-            data
-          });
-        }
+        return this._createAudioDataFromData();
       }
     } else {
       return new AudioData({
@@ -17337,6 +18320,35 @@ class AudioSample {
         timestamp: this.microsecondTimestamp,
         data: this._data.buffer instanceof ArrayBuffer ? this._data.buffer : this._data.slice()
         // In the case of SharedArrayBuffer, convert to ArrayBuffer
+      });
+    }
+  }
+  /** @internal */
+  _createAudioDataFromData() {
+    if (formatIsPlanar(this.format)) {
+      const size = this.allocationSize({ planeIndex: 0, format: this.format });
+      const data = new ArrayBuffer(size * this.numberOfChannels);
+      for (let i = 0; i < this.numberOfChannels; i++) {
+        this.copyTo(new Uint8Array(data, i * size, size), { planeIndex: i, format: this.format });
+      }
+      return new AudioData({
+        format: this.format,
+        sampleRate: this.sampleRate,
+        numberOfFrames: this.numberOfFrames,
+        numberOfChannels: this.numberOfChannels,
+        timestamp: this.microsecondTimestamp,
+        data
+      });
+    } else {
+      const data = new ArrayBuffer(this.allocationSize({ planeIndex: 0, format: this.format }));
+      this.copyTo(data, { planeIndex: 0, format: this.format });
+      return new AudioData({
+        format: this.format,
+        sampleRate: this.sampleRate,
+        numberOfFrames: this.numberOfFrames,
+        numberOfChannels: this.numberOfChannels,
+        timestamp: this.microsecondTimestamp,
+        data
       });
     }
   }
@@ -17795,6 +18807,7 @@ class EncodedPacketSink {
     let ended = false;
     let terminated = false;
     let outOfBandError = null;
+    let hasOutOfBandError = false;
     const timestamps = [];
     const maxQueueSize = () => Math.max(2, timestamps.length);
     (async () => {
@@ -17816,8 +18829,9 @@ class EncodedPacketSink {
       ended = true;
       onQueueNotEmpty();
     })().catch((error) => {
-      if (!outOfBandError) {
+      if (!hasOutOfBandError) {
         outOfBandError = error;
+        hasOutOfBandError = true;
         onQueueNotEmpty();
       }
     });
@@ -17829,7 +18843,7 @@ class EncodedPacketSink {
             throw new InputDisposedError();
           } else if (terminated) {
             return { value: void 0, done: true };
-          } else if (outOfBandError) {
+          } else if (hasOutOfBandError) {
             throw outOfBandError;
           } else if (packetQueue.length > 0) {
             const value = packetQueue.shift();
@@ -17870,7 +18884,7 @@ class DecoderWrapper {
 }
 class BaseMediaSampleSink {
   /** @internal */
-  mediaSamplesInRange(startTimestamp = 0, endTimestamp = Infinity, options) {
+  mediaSamplesInRange(startTimestamp = -Infinity, endTimestamp = Infinity, options) {
     validateTimestamp(startTimestamp);
     validateTimestamp(endTimestamp);
     const sampleQueue = [];
@@ -17882,6 +18896,7 @@ class BaseMediaSampleSink {
     let ended = false;
     let terminated = false;
     let outOfBandError = null;
+    let hasOutOfBandError = false;
     const packetRetrievalOptions = {
       ...options,
       verifyKeyPackets: true,
@@ -17915,8 +18930,9 @@ class BaseMediaSampleSink {
           ({ promise: queueNotEmpty, resolve: onQueueNotEmpty } = promiseWithResolvers());
         }
       }, (error) => {
-        if (!outOfBandError) {
+        if (!hasOutOfBandError) {
           outOfBandError = error;
+          hasOutOfBandError = true;
           onQueueNotEmpty();
         }
       });
@@ -17951,8 +18967,9 @@ class BaseMediaSampleSink {
       decoderIsFlushed = true;
       onQueueNotEmpty();
     })().catch((error) => {
-      if (!outOfBandError) {
+      if (!hasOutOfBandError) {
         outOfBandError = error;
+        hasOutOfBandError = true;
         onQueueNotEmpty();
       }
     });
@@ -17971,7 +18988,7 @@ class BaseMediaSampleSink {
             throw new InputDisposedError();
           } else if (terminated) {
             return { value: void 0, done: true };
-          } else if (outOfBandError) {
+          } else if (hasOutOfBandError) {
             closeSamples();
             throw outOfBandError;
           } else if (sampleQueue.length > 0) {
@@ -18012,6 +19029,7 @@ class BaseMediaSampleSink {
     let decoderIsFlushed = false;
     let terminated = false;
     let outOfBandError = null;
+    let hasOutOfBandError = false;
     const pushToQueue = (sample) => {
       sampleQueue.push(sample);
       onQueueNotEmpty();
@@ -18042,8 +19060,9 @@ class BaseMediaSampleSink {
           sample.close();
         }
       }, (error) => {
-        if (!outOfBandError) {
+        if (!hasOutOfBandError) {
           outOfBandError = error;
+          hasOutOfBandError = true;
           onQueueNotEmpty();
         }
       });
@@ -18113,8 +19132,9 @@ class BaseMediaSampleSink {
       decoderIsFlushed = true;
       onQueueNotEmpty();
     })().catch((error) => {
-      if (!outOfBandError) {
+      if (!hasOutOfBandError) {
         outOfBandError = error;
+        hasOutOfBandError = true;
         onQueueNotEmpty();
       }
     });
@@ -18132,7 +19152,7 @@ class BaseMediaSampleSink {
             throw new InputDisposedError();
           } else if (terminated) {
             return { value: void 0, done: true };
-          } else if (outOfBandError) {
+          } else if (hasOutOfBandError) {
             closeSamples();
             throw outOfBandError;
           } else if (sampleQueue.length > 0) {
@@ -18186,12 +19206,13 @@ class VideoDecoderWrapper extends DecoderWrapper {
     this.colorQueue = [];
     this.alphaQueue = [];
     this.merger = null;
-    this.mergerCreationFailed = false;
     this.decodedAlphaChunkCount = 0;
     this.alphaDecoderQueueSize = 0;
     this.nullAlphaFrameQueue = [];
     this.currentAlphaPacketIndex = 0;
     this.alphaRaslSkipped = false;
+    this.finalSamples = [];
+    this.mergeAlphaPromises = [];
     const MatchingCustomDecoder = customVideoDecoders.find((x) => x.supports(codec, decoderConfig));
     if (MatchingCustomDecoder) {
       this.customDecoder = new MatchingCustomDecoder();
@@ -18203,13 +19224,16 @@ class VideoDecoderWrapper extends DecoderWrapper {
         }
         this.finalizeAndEmitSample(sample);
       };
-      void this.customDecoderCallSerializer.call(() => this.customDecoder.init());
+      this.customDecoder.onError = (error) => {
+        onError(error);
+      };
+      void this.customDecoderCallSerializer.call(() => this.customDecoder.init()).catch((error) => onError(error));
     } else {
       const colorHandler = (frame) => {
         if (this.alphaQueue.length > 0) {
           const alphaFrame = this.alphaQueue.shift();
           assert(alphaFrame !== void 0);
-          this.mergeAlpha(frame, alphaFrame);
+          void this.mergeAlpha(frame, alphaFrame);
         } else {
           this.colorQueue.push(frame);
         }
@@ -18260,7 +19284,7 @@ class VideoDecoderWrapper extends DecoderWrapper {
     }
     if (this.customDecoder) {
       this.customDecoderQueueSize++;
-      void this.customDecoderCallSerializer.call(() => this.customDecoder.decode(packet)).then(() => this.customDecoderQueueSize--);
+      void this.customDecoderCallSerializer.call(() => this.customDecoder.decode(packet)).catch((error) => this.onError(error)).finally(() => this.customDecoderQueueSize--);
     } else {
       assert(this.decoder);
       if (!isWebKit()) {
@@ -18269,8 +19293,17 @@ class VideoDecoderWrapper extends DecoderWrapper {
       if (isChromium() && this.currentPacketIndex === 0) {
         if (this.codec === "avc") {
           const filteredNalUnits = [];
+          let hasFrameData = false;
           for (const loc of iterateAvcNalUnits(packet.data, this.decoderConfig)) {
             const type = extractNalUnitTypeForAvc(packet.data[loc.offset]);
+            hasFrameData || (hasFrameData = type >= 1 && type <= 5);
+            if (type === AvcNalUnitType.AUD) {
+              if (hasFrameData) {
+                break;
+              } else {
+                filteredNalUnits.length = 0;
+              }
+            }
             if (!(type >= 20 && type <= 31)) {
               filteredNalUnits.push(packet.data.subarray(loc.offset, loc.offset + loc.length));
             }
@@ -18290,27 +19323,19 @@ class VideoDecoderWrapper extends DecoderWrapper {
     this.currentPacketIndex++;
   }
   decodeAlphaData(packet) {
-    if (!packet.sideData.alpha || this.mergerCreationFailed) {
+    if (!packet.sideData.alpha) {
       this.pushNullAlphaFrame();
       return;
     }
     if (!this.merger) {
-      try {
-        this.merger = new ColorAlphaMerger();
-      } catch (error) {
-        console.error("Due to an error, only color data will be decoded.", error);
-        this.mergerCreationFailed = true;
-        this.decodeAlphaData(packet);
-        return;
-      }
+      this.merger = new ColorAlphaMerger();
     }
     if (!this.alphaDecoder) {
       const alphaHandler = (frame) => {
-        this.alphaDecoderQueueSize--;
         if (this.colorQueue.length > 0) {
           const colorFrame = this.colorQueue.shift();
           assert(colorFrame !== void 0);
-          this.mergeAlpha(colorFrame, frame);
+          void this.mergeAlpha(colorFrame, frame);
         } else {
           this.alphaQueue.push(frame);
         }
@@ -18320,11 +19345,12 @@ class VideoDecoderWrapper extends DecoderWrapper {
           if (this.colorQueue.length > 0) {
             const colorFrame = this.colorQueue.shift();
             assert(colorFrame !== void 0);
-            this.mergeAlpha(colorFrame, null);
+            void this.mergeAlpha(colorFrame, null);
           } else {
             this.alphaQueue.push(null);
           }
         }
+        this.alphaDecoderQueueSize--;
       };
       const stack = new Error("Decoding error").stack;
       this.alphaDecoder = new VideoDecoder({
@@ -18406,22 +19432,30 @@ class VideoDecoderWrapper extends DecoderWrapper {
     sample.setRotation(this.rotation);
     this.onSample(sample);
   }
-  mergeAlpha(color, alpha) {
-    if (!alpha) {
-      const finalSample2 = new VideoSample(color);
-      this.sampleHandler(finalSample2);
-      return;
+  async mergeAlpha(color, alpha) {
+    const resolver = promiseWithResolvers();
+    this.mergeAlphaPromises.push(resolver.promise);
+    const result = { sample: null };
+    this.finalSamples.push(result);
+    try {
+      if (!alpha) {
+        result.sample = new VideoSample(color);
+      } else {
+        assert(this.merger);
+        const finalFrame = await this.merger.merge(color, alpha);
+        result.sample = new VideoSample(finalFrame);
+      }
+      while (this.finalSamples.length > 0 && this.finalSamples[0].sample !== null) {
+        const next = this.finalSamples.shift();
+        this.sampleHandler(next.sample);
+      }
+    } catch (error) {
+      removeItem(this.finalSamples, result);
+      this.onError(error);
+    } finally {
+      removeItem(this.mergeAlphaPromises, resolver.promise);
+      resolver.resolve();
     }
-    assert(this.merger);
-    this.merger.update(color, alpha);
-    color.close();
-    alpha.close();
-    const finalFrame = new VideoFrame(this.merger.canvas, {
-      timestamp: color.timestamp,
-      duration: color.duration ?? void 0
-    });
-    const finalSample = new VideoSample(finalFrame);
-    this.sampleHandler(finalSample);
   }
   async flush() {
     if (this.customDecoder) {
@@ -18432,6 +19466,7 @@ class VideoDecoderWrapper extends DecoderWrapper {
         this.decoder.flush(),
         this.alphaDecoder?.flush()
       ]);
+      await Promise.all(this.mergeAlphaPromises);
       this.colorQueue.forEach((x) => x.close());
       this.colorQueue.length = 0;
       this.alphaQueue.forEach((x) => x?.close());
@@ -18471,135 +19506,240 @@ class VideoDecoderWrapper extends DecoderWrapper {
     this.sampleQueue.length = 0;
   }
 }
+let mergerWorkerUrl = null;
 class ColorAlphaMerger {
   constructor() {
-    if (typeof OffscreenCanvas !== "undefined") {
-      this.canvas = new OffscreenCanvas(300, 150);
-    } else {
-      this.canvas = document.createElement("canvas");
+    this.workers = [];
+    this.nextWorkerIndex = 0;
+    this.pendingRequests = /* @__PURE__ */ new Map();
+    this.nextRequestId = 0;
+  }
+  merge(color, alpha) {
+    if (this.workers.length === 0) {
+      if (!mergerWorkerUrl) {
+        const blob = new Blob([`(${colorAlphaMergerWorkerCode.toString()})()`], { type: "application/javascript" });
+        mergerWorkerUrl = URL.createObjectURL(blob);
+      }
+      const poolSize = clamp$1(navigator.hardwareConcurrency, 1, 4);
+      for (let i = 0; i < poolSize; i++) {
+        const worker2 = new Worker(mergerWorkerUrl);
+        worker2.addEventListener("message", (event) => {
+          const data = event.data;
+          const pending2 = this.pendingRequests.get(data.id);
+          if (!pending2) {
+            return;
+          }
+          this.pendingRequests.delete(data.id);
+          if ("error" in data) {
+            pending2.reject(new Error(data.error));
+          } else {
+            pending2.resolve(data.frame);
+          }
+        });
+        worker2.addEventListener("error", (event) => {
+          const error = new Error(event.message || "Color/alpha merge worker error.");
+          for (const pending2 of this.pendingRequests.values()) {
+            pending2.reject(error);
+          }
+          this.pendingRequests.clear();
+        });
+        this.workers.push(worker2);
+      }
     }
-    const gl = this.canvas.getContext("webgl2", {
-      premultipliedAlpha: false
-    });
-    if (!gl) {
-      throw new Error("Couldn't acquire WebGL 2 context.");
-    }
-    this.gl = gl;
-    this.program = this.createProgram();
-    this.vao = this.createVAO();
-    this.colorTexture = this.createTexture();
-    this.alphaTexture = this.createTexture();
-    this.gl.useProgram(this.program);
-    this.gl.uniform1i(this.gl.getUniformLocation(this.program, "u_colorTexture"), 0);
-    this.gl.uniform1i(this.gl.getUniformLocation(this.program, "u_alphaTexture"), 1);
-  }
-  createProgram() {
-    const vertexShader = this.createShader(this.gl.VERTEX_SHADER, `#version 300 es
-			in vec2 a_position;
-			in vec2 a_texCoord;
-			out vec2 v_texCoord;
-			
-			void main() {
-				gl_Position = vec4(a_position, 0.0, 1.0);
-				v_texCoord = a_texCoord;
-			}
-		`);
-    const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, `#version 300 es
-			precision highp float;
-			
-			uniform sampler2D u_colorTexture;
-			uniform sampler2D u_alphaTexture;
-			in vec2 v_texCoord;
-			out vec4 fragColor;
-			
-			void main() {
-				vec3 color = texture(u_colorTexture, v_texCoord).rgb;
-				float alpha = texture(u_alphaTexture, v_texCoord).r;
-				fragColor = vec4(color, alpha);
-			}
-		`);
-    const program = this.gl.createProgram();
-    this.gl.attachShader(program, vertexShader);
-    this.gl.attachShader(program, fragmentShader);
-    this.gl.linkProgram(program);
-    return program;
-  }
-  createShader(type, source) {
-    const shader = this.gl.createShader(type);
-    this.gl.shaderSource(shader, source);
-    this.gl.compileShader(shader);
-    return shader;
-  }
-  createVAO() {
-    const vao = this.gl.createVertexArray();
-    this.gl.bindVertexArray(vao);
-    const vertices = new Float32Array([
-      -1,
-      -1,
-      0,
-      1,
-      1,
-      -1,
-      1,
-      1,
-      -1,
-      1,
-      0,
-      0,
-      1,
-      1,
-      1,
-      0
-    ]);
-    const buffer = this.gl.createBuffer();
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-    const positionLocation = this.gl.getAttribLocation(this.program, "a_position");
-    const texCoordLocation = this.gl.getAttribLocation(this.program, "a_texCoord");
-    this.gl.enableVertexAttribArray(positionLocation);
-    this.gl.vertexAttribPointer(positionLocation, 2, this.gl.FLOAT, false, 16, 0);
-    this.gl.enableVertexAttribArray(texCoordLocation);
-    this.gl.vertexAttribPointer(texCoordLocation, 2, this.gl.FLOAT, false, 16, 8);
-    return vao;
-  }
-  createTexture() {
-    const texture = this.gl.createTexture();
-    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-    return texture;
-  }
-  update(color, alpha) {
-    if (color.displayWidth !== this.canvas.width || color.displayHeight !== this.canvas.height) {
-      this.canvas.width = color.displayWidth;
-      this.canvas.height = color.displayHeight;
-    }
-    this.gl.activeTexture(this.gl.TEXTURE0);
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.colorTexture);
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, color);
-    this.gl.activeTexture(this.gl.TEXTURE1);
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.alphaTexture);
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, alpha);
-    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-    this.gl.bindVertexArray(this.vao);
-    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    const id = this.nextRequestId++;
+    const pending = promiseWithResolvers();
+    this.pendingRequests.set(id, pending);
+    const worker = this.workers[this.nextWorkerIndex];
+    this.nextWorkerIndex = (this.nextWorkerIndex + 1) % this.workers.length;
+    worker.postMessage({ id, color, alpha }, { transfer: [color, alpha] });
+    return pending.promise;
   }
   close() {
-    this.gl.getExtension("WEBGL_lose_context")?.loseContext();
-    this.gl = null;
+    for (const worker of this.workers) {
+      worker.terminate();
+    }
+    this.workers.length = 0;
+    const error = new Error("Color/alpha merger closed.");
+    for (const pending of this.pendingRequests.values()) {
+      pending.reject(error);
+    }
+    this.pendingRequests.clear();
   }
 }
+const colorAlphaMergerWorkerCode = () => {
+  let cpuAlphaBuffer = null;
+  let cpuColorBuffer = null;
+  let chain = Promise.resolve();
+  self.addEventListener("message", (event) => {
+    const { id, color, alpha } = event.data;
+    chain = chain.then(async () => {
+      try {
+        const frame = await merge(color, alpha);
+        self.postMessage({ id, frame }, { transfer: [frame] });
+      } catch (error) {
+        self.postMessage({ id, error: error.message });
+      } finally {
+        color.close();
+        alpha.close();
+      }
+    });
+  });
+  const merge = async (color, alpha) => {
+    const format = color.format;
+    const alphaFormat = alpha.format;
+    if (!format || !alphaFormat) {
+      throw new Error("CPU color/alpha merging requires a known VideoFrame format.");
+    }
+    const colorIs10 = format.includes("P10");
+    const colorIs12 = format.includes("P12");
+    const alphaIs10 = alphaFormat.includes("P10");
+    const alphaIs12 = alphaFormat.includes("P12");
+    if (alphaIs10 !== colorIs10 || alphaIs12 !== colorIs12) {
+      throw new Error(`CPU color/alpha merging requires the alpha frame to have the same bit depth as the color frame (color: '${format}', alpha: '${alphaFormat}').`);
+    }
+    if (format === "RGBX" || format === "RGBA" || format === "BGRX" || format === "BGRA") {
+      return await mergeInterleavedRgba(color, alpha, format);
+    } else if (format === "I420" || format === "I420P10" || format === "I420P12" || format === "I422" || format === "I422P10" || format === "I422P12" || format === "I444" || format === "I444P10" || format === "I444P12") {
+      return await mergePlanarYuv(color, alpha, format);
+    } else if (format === "NV12") {
+      return await mergeNv12(color, alpha);
+    }
+    throw new Error(`CPU color/alpha merging does not support format '${format}'.`);
+  };
+  const mergeInterleavedRgba = async (color, alpha, format) => {
+    const width = color.visibleRect?.width ?? color.codedWidth;
+    const height = color.visibleRect?.height ?? color.codedHeight;
+    const pixelCount = width * height;
+    const output = new Uint8Array(pixelCount * 4);
+    await color.copyTo(output);
+    const alphaY = await readAlpha(alpha, width, height, 1);
+    for (let i = 0, j = 3; i < pixelCount; i++, j += 4) {
+      output[j] = alphaY[i];
+    }
+    const outputFormat = format === "RGBX" || format === "RGBA" ? "RGBA" : "BGRA";
+    const init = {
+      format: outputFormat,
+      codedWidth: width,
+      codedHeight: height,
+      timestamp: color.timestamp,
+      duration: color.duration ?? void 0,
+      transfer: [output.buffer]
+    };
+    return new VideoFrame(output, init);
+  };
+  const mergePlanarYuv = async (color, alpha, format) => {
+    const width = color.visibleRect?.width ?? color.codedWidth;
+    const height = color.visibleRect?.height ?? color.codedHeight;
+    const is10 = format.includes("P10");
+    const is12 = format.includes("P12");
+    const bytesPerSample = is10 || is12 ? 2 : 1;
+    let chromaW;
+    let chromaH;
+    if (format.startsWith("I420")) {
+      chromaW = Math.ceil(width / 2);
+      chromaH = Math.ceil(height / 2);
+    } else if (format.startsWith("I422")) {
+      chromaW = Math.ceil(width / 2);
+      chromaH = height;
+    } else {
+      chromaW = width;
+      chromaH = height;
+    }
+    const ySamples = width * height;
+    const uvSamples = chromaW * chromaH;
+    const yBytes = ySamples * bytesPerSample;
+    const uvBytes = uvSamples * bytesPerSample;
+    const aBytes = ySamples * bytesPerSample;
+    const outputBytes = yBytes + 2 * uvBytes + aBytes;
+    const output = new Uint8Array(outputBytes);
+    await color.copyTo(output);
+    const alphaY = await readAlpha(alpha, width, height, bytesPerSample);
+    const aOffset = yBytes + 2 * uvBytes;
+    output.set(alphaY, aOffset);
+    const outputFormat = format.slice(0, 4) + "A" + format.slice(4);
+    const init = {
+      format: outputFormat,
+      codedWidth: width,
+      codedHeight: height,
+      timestamp: color.timestamp,
+      duration: color.duration ?? void 0,
+      transfer: [output.buffer]
+    };
+    return new VideoFrame(output, init);
+  };
+  const mergeNv12 = async (color, alpha) => {
+    const width = color.visibleRect?.width ?? color.codedWidth;
+    const height = color.visibleRect?.height ?? color.codedHeight;
+    const ySize = width * height;
+    const chromaW = Math.ceil(width / 2);
+    const chromaH = Math.ceil(height / 2);
+    const uvSize = chromaW * chromaH;
+    const sourceSize = color.allocationSize();
+    if (!cpuColorBuffer || cpuColorBuffer.byteLength !== sourceSize) {
+      cpuColorBuffer = new Uint8Array(sourceSize);
+    }
+    await color.copyTo(cpuColorBuffer);
+    const output = new Uint8Array(ySize + 2 * uvSize + ySize);
+    output.set(cpuColorBuffer.subarray(0, ySize), 0);
+    const uOffset = ySize;
+    const vOffset = ySize + uvSize;
+    const uvStart = ySize;
+    for (let i = 0; i < uvSize; i++) {
+      output[uOffset + i] = cpuColorBuffer[uvStart + i * 2];
+      output[vOffset + i] = cpuColorBuffer[uvStart + i * 2 + 1];
+    }
+    const alphaY = await readAlpha(alpha, width, height, 1);
+    output.set(alphaY, ySize + 2 * uvSize);
+    const init = {
+      format: "I420A",
+      codedWidth: width,
+      codedHeight: height,
+      timestamp: color.timestamp,
+      duration: color.duration ?? void 0,
+      transfer: [output.buffer]
+    };
+    return new VideoFrame(output, init);
+  };
+  const readAlpha = async (alpha, width, height, bytesPerSample) => {
+    const size = alpha.allocationSize();
+    if (!cpuAlphaBuffer || cpuAlphaBuffer.byteLength !== size) {
+      cpuAlphaBuffer = new Uint8Array(size);
+    }
+    await alpha.copyTo(cpuAlphaBuffer);
+    const format = alpha.format;
+    if (format === "RGBA" || format === "BGRA" || format === "RGBX" || format === "BGRX") {
+      const rOffset = format === "RGBA" || format === "RGBX" ? 0 : 2;
+      const pixelCount = width * height;
+      for (let i = 0; i < pixelCount; i++) {
+        cpuAlphaBuffer[i] = cpuAlphaBuffer[i * 4 + rOffset];
+      }
+      return cpuAlphaBuffer.subarray(0, pixelCount);
+    } else {
+      return cpuAlphaBuffer.subarray(0, width * height * bytesPerSample);
+    }
+  };
+};
+const validateVideoSinkDecoderOptions = (decoderOptions) => {
+  if (!decoderOptions || typeof decoderOptions !== "object") {
+    throw new TypeError("decoderOptions must be an object.");
+  }
+  if (decoderOptions.hardwareAcceleration !== void 0 && !["no-preference", "prefer-hardware", "prefer-software"].includes(decoderOptions.hardwareAcceleration)) {
+    throw new TypeError("decoderOptions.hardwareAcceleration, when provided, must be 'no-preference', 'prefer-hardware' or 'prefer-software'.");
+  }
+  if (decoderOptions.optimizeForLatency !== void 0 && typeof decoderOptions.optimizeForLatency !== "boolean") {
+    throw new TypeError("decoderOptions.optimizeForLatency, when provided, must be a boolean.");
+  }
+};
 class VideoSampleSink extends BaseMediaSampleSink {
   /** Creates a new {@link VideoSampleSink} for the given {@link InputVideoTrack}. */
-  constructor(videoTrack) {
+  constructor(videoTrack, decoderOptions = {}) {
     if (!(videoTrack instanceof InputVideoTrack)) {
       throw new TypeError("videoTrack must be an InputVideoTrack.");
     }
+    validateVideoSinkDecoderOptions(decoderOptions);
     super();
     this._track = videoTrack;
+    this._decoderOptions = decoderOptions;
   }
   /** @internal */
   async _createDecoder(onSample, onError) {
@@ -18608,9 +19748,14 @@ class VideoSampleSink extends BaseMediaSampleSink {
     }
     const codec = await this._track.getCodec();
     const rotation = await this._track.getRotation();
-    const decoderConfig = await this._track.getDecoderConfig();
+    let decoderConfig = await this._track.getDecoderConfig();
     const timeResolution = await this._track.getTimeResolution();
     assert(codec && decoderConfig);
+    decoderConfig = {
+      ...decoderConfig,
+      hardwareAcceleration: this._decoderOptions.hardwareAcceleration,
+      optimizeForLatency: this._decoderOptions.optimizeForLatency
+    };
     return new VideoDecoderWrapper(onSample, onError, codec, decoderConfig, rotation, timeResolution);
   }
   /** @internal */
@@ -18640,7 +19785,7 @@ class VideoSampleSink extends BaseMediaSampleSink {
    * @param endTimestamp - The timestamp in seconds at which to stop yielding samples (exclusive).
    * @param options - Options used for the underlying packet retrieval.
    */
-  samples(startTimestamp = 0, endTimestamp = Infinity, options = {}) {
+  samples(startTimestamp, endTimestamp, options = {}) {
     return this.mediaSamplesInRange(startTimestamp, endTimestamp, options);
   }
   /**
@@ -18648,6 +19793,9 @@ class VideoSampleSink extends BaseMediaSampleSink {
    * uses an optimized decoding pipeline if these timestamps are monotonically sorted, decoding each packet at most
    * once, and is therefore more efficient than manually getting the sample for every timestamp. The iterator may
    * yield null if no frame is available for a given timestamp.
+   *
+   * This method is good for sparse access of media data. If you want primarily sequential media access, prefer
+   * {@link VideoSampleSink.samples} instead.
    *
    * @param timestamps - An iterable or async iterable of timestamps in seconds.
    * @param options - Options used for the underlying packet retrieval.
@@ -18692,11 +19840,14 @@ class CanvasSink {
     if (options.poolSize !== void 0 && (typeof options.poolSize !== "number" || !Number.isInteger(options.poolSize) || options.poolSize < 0)) {
       throw new TypeError("poolSize must be a non-negative integer.");
     }
+    if (options.decoderOptions !== void 0) {
+      validateVideoSinkDecoderOptions(options.decoderOptions);
+    }
     this._videoTrack = videoTrack;
     this._alpha = options.alpha ?? false;
     this._options = options;
     this._fit = options.fit ?? "fill";
-    this._videoSampleSink = new VideoSampleSink(videoTrack);
+    this._videoSampleSink = new VideoSampleSink(videoTrack, options.decoderOptions);
     this._canvasPool = Array.from({ length: options.poolSize ?? 0 }, () => null);
   }
   /** @internal */
@@ -18801,7 +19952,7 @@ class CanvasSink {
    * @param endTimestamp - The timestamp in seconds at which to stop yielding canvases (exclusive).
    * @param options - Options used for the underlying packet retrieval.
    */
-  async *canvases(startTimestamp = 0, endTimestamp = Infinity, options) {
+  async *canvases(startTimestamp, endTimestamp, options) {
     await this._ensureInit();
     yield* mapAsyncGenerator(this._videoSampleSink.samples(startTimestamp, endTimestamp, options), (sample) => this._videoSampleToWrappedCanvas(sample));
   }
@@ -18810,6 +19961,9 @@ class CanvasSink {
    * decoding pipeline if these timestamps are monotonically sorted, decoding each packet at most once, and is
    * therefore more efficient than manually getting the canvas for every timestamp. The iterator may yield null if
    * no frame is available for a given timestamp.
+   *
+   * This method is good for sparse access of media data. If you want primarily sequential media access, prefer
+   * {@link CanvasSink.canvases} instead.
    *
    * @param timestamps - An iterable or async iterable of timestamps in seconds.
    * @param options - Options used for the underlying packet retrieval.
@@ -18827,9 +19981,16 @@ class AudioDecoderWrapper extends DecoderWrapper {
     this.customDecoderCallSerializer = new CallSerializer();
     this.customDecoderQueueSize = 0;
     this.currentTimestamp = null;
+    this.expectedFirstTimestamp = null;
+    this.timestampOffset = 0;
     const sampleHandler = (sample) => {
-      if (this.currentTimestamp === null || Math.abs(sample.timestamp - this.currentTimestamp) >= sample.duration) {
-        this.currentTimestamp = sample.timestamp;
+      let sampleTimestamp = sample.timestamp;
+      if (this.expectedFirstTimestamp && this.currentTimestamp === null) {
+        this.timestampOffset = this.expectedFirstTimestamp - sampleTimestamp;
+      }
+      sampleTimestamp += this.timestampOffset;
+      if (this.currentTimestamp === null || Math.abs(sampleTimestamp - this.currentTimestamp) >= sample.duration) {
+        this.currentTimestamp = sampleTimestamp;
       }
       const preciseTimestamp = this.currentTimestamp;
       this.currentTimestamp += sample.duration;
@@ -18852,7 +20013,10 @@ class AudioDecoderWrapper extends DecoderWrapper {
         }
         sampleHandler(sample);
       };
-      void this.customDecoderCallSerializer.call(() => this.customDecoder.init());
+      this.customDecoder.onError = (error) => {
+        onError(error);
+      };
+      void this.customDecoderCallSerializer.call(() => this.customDecoder.init()).catch((error) => onError(error));
     } else {
       const stack = new Error("Decoding error").stack;
       this.decoder = new AudioDecoder({
@@ -18882,19 +20046,23 @@ class AudioDecoderWrapper extends DecoderWrapper {
   decode(packet) {
     if (this.customDecoder) {
       this.customDecoderQueueSize++;
-      void this.customDecoderCallSerializer.call(() => this.customDecoder.decode(packet)).then(() => this.customDecoderQueueSize--);
+      void this.customDecoderCallSerializer.call(() => this.customDecoder.decode(packet)).catch((error) => this.onError(error)).finally(() => this.customDecoderQueueSize--);
     } else {
       assert(this.decoder);
+      this.expectedFirstTimestamp ?? (this.expectedFirstTimestamp = packet.timestamp);
       this.decoder.decode(packet.toEncodedAudioChunk());
     }
   }
-  flush() {
+  async flush() {
     if (this.customDecoder) {
-      return this.customDecoderCallSerializer.call(() => this.customDecoder.flush());
+      await this.customDecoderCallSerializer.call(() => this.customDecoder.flush());
     } else {
       assert(this.decoder);
-      return this.decoder.flush();
+      await this.decoder.flush();
     }
+    this.currentTimestamp = null;
+    this.expectedFirstTimestamp = null;
+    this.timestampOffset = 0;
   }
   close() {
     if (this.customDecoder) {
@@ -19118,7 +20286,7 @@ class AudioSampleSink extends BaseMediaSampleSink {
    * @param endTimestamp - The timestamp in seconds at which to stop yielding samples (exclusive).
    * @param options - Options used for the underlying packet retrieval.
    */
-  samples(startTimestamp = 0, endTimestamp = Infinity, options = {}) {
+  samples(startTimestamp, endTimestamp, options = {}) {
     return this.mediaSamplesInRange(startTimestamp, endTimestamp, options);
   }
   /**
@@ -19126,6 +20294,9 @@ class AudioSampleSink extends BaseMediaSampleSink {
    * uses an optimized decoding pipeline if these timestamps are monotonically sorted, decoding each packet at most
    * once, and is therefore more efficient than manually getting the sample for every timestamp. The iterator may
    * yield null if no sample is available for a given timestamp.
+   *
+   * This method is good for sparse access of media data. If you want primarily sequential media access, prefer
+   * {@link AudioSampleSink.samples} instead.
    *
    * @param timestamps - An iterable or async iterable of timestamps in seconds.
    * @param options - Options used for the underlying packet retrieval.
@@ -19173,7 +20344,7 @@ class AudioBufferSink {
    * @param endTimestamp - The timestamp in seconds at which to stop yielding buffers (exclusive).
    * @param options - Options used for the underlying packet retrieval.
    */
-  buffers(startTimestamp = 0, endTimestamp = Infinity, options) {
+  buffers(startTimestamp, endTimestamp, options) {
     return mapAsyncGenerator(this._audioSampleSink.samples(startTimestamp, endTimestamp, options), (data) => this._audioSampleToWrappedArrayBuffer(data));
   }
   /**
@@ -19284,6 +20455,26 @@ class InputTrack {
    */
   async isRelativeToUnixEpoch() {
     return this._backing.isRelativeToUnixEpoch();
+  }
+  /**
+   * Returns the Unix time (in seconds since January 1, 1970 00:00:00 UTC) that the given track timestamp (in seconds)
+   * maps to, or `null` if there is no such mapping. This provides a piecewise-continuous mapping from this track's
+   * timestamp space into wall-clock time. Such mapping exists, for example, for HLS playlists with
+   * `#EXT-X-PROGRAM-DATE-TIME` tags present.
+   *
+   * This mapping can be available even when {@link InputTrack.isRelativeToUnixEpoch} is `false`, for example for HLS
+   * streams with program date time information but with {@link HlsInputFormatOptions.offsetTimestampsByDateTime}
+   * set to `false`.
+   */
+  async getUnixTimeForTimestamp(timestamp) {
+    return this._backing.getUnixTimeForTimestamp(timestamp);
+  }
+  /**
+   * Whether the track's timestamps can be mapped to Unix wall clock time via
+   * {@link InputTrack.getUnixTimeForTimestamp}.
+   */
+  async hasUnixTimeMapping() {
+    return await this._backing.getUnixTimeForTimestamp(await this.getFirstTimestamp()) !== null;
   }
   /** Returns the track's disposition, i.e. information about its intended usage. */
   async getDisposition() {
@@ -19519,7 +20710,7 @@ class InputVideoTrack extends InputTrack {
     return requireSync(this._backing.getCodec(), "codec", "getCodec");
   }
   async hasOnlyKeyPackets() {
-    return await this._backing.getHasOnlyKeyPackets?.() ?? false;
+    return await this._backing.getHasOnlyKeyPackets?.() ?? await this._backing.getCodec() === "prores";
   }
   /** Returns the width in pixels of the track's coded samples, before any transformations or rotations. */
   async getCodedWidth() {
@@ -19658,7 +20849,7 @@ class InputVideoTrack extends InputTrack {
   /** If this method returns true, the track's samples use a high dynamic range (HDR). */
   async hasHighDynamicRange() {
     const colorSpace = await this._backing.getColorSpace();
-    return colorSpace.primaries === "bt2020" || colorSpace.primaries === "smpte432" || colorSpace.transfer === "pg" || colorSpace.transfer === "hlg" || colorSpace.matrix === "bt2020-ncl";
+    return colorSpace.primaries === "bt2020" || colorSpace.primaries === "smpte432" || colorSpace.transfer === "pq" || colorSpace.transfer === "hlg" || colorSpace.matrix === "bt2020-ncl";
   }
   /** Checks if this track may contain transparent samples with alpha data. */
   async canBeTransparent() {
@@ -19697,7 +20888,7 @@ class InputVideoTrack extends InputTrack {
       const support = await VideoDecoder.isConfigSupported(decoderConfig);
       return support.supported === true;
     } catch (error) {
-      console.error("Error during decodability check:", error);
+      Logging._error("Error during decodability check:", error);
       return false;
     }
   }
@@ -19799,7 +20990,7 @@ class InputAudioTrack extends InputTrack {
         return support.supported === true;
       }
     } catch (error) {
-      console.error("Error during decodability check:", error);
+      Logging._error("Error during decodability check:", error);
       return false;
     }
   }
@@ -19931,16 +21122,6 @@ const queryInputTracks = async (tracks, query) => {
 polyfillSymbolDispose();
 const DEFAULT_SOURCE_CACHE_GROUP = 1;
 const ENCRYPTION_KEY_CACHE_GROUP = 2;
-let inputFinalizationRegistry = null;
-if (typeof FinalizationRegistry !== "undefined") {
-  inputFinalizationRegistry = new FinalizationRegistry((refs) => {
-    for (const ref of refs) {
-      if (!ref.freed) {
-        ref.free();
-      }
-    }
-  });
-}
 class Input extends EventEmitter {
   /** True if the input has been disposed. */
   get disposed() {
@@ -19989,7 +21170,6 @@ class Input extends EventEmitter {
       this._rootRef = options.source;
     }
     this._sourceRefs.push(this._rootRef);
-    inputFinalizationRegistry?.register(this, this._sourceRefs, this);
   }
   /** @internal */
   get _rootSource() {
@@ -20263,8 +21443,10 @@ class Input extends EventEmitter {
       ref.free();
     }
     this._sourceRefs.length = 0;
-    inputFinalizationRegistry?.unregister(this);
-    void this._demuxerPromise?.then((demuxer) => demuxer.dispose());
+    if (this._demuxerPromise) {
+      void this._demuxerPromise.then((demuxer) => demuxer.dispose()).catch(() => {
+      });
+    }
   }
   /**
    * Calls `.dispose()` on the input, implementing the `Disposable` interface for use with
@@ -20369,14 +21551,14 @@ class Reader {
         if (chunks.length === 1 && this.fileSizeNonStrict !== null) {
           return this.requestSlice(0, this.fileSizeNonStrict);
         }
-        const startOffset = chunks.length * CHUNK_SIZE;
-        let slice = this.requestSliceRange(startOffset, 0, CHUNK_SIZE);
+        let slice = this.requestSliceRange(currentSize, 0, CHUNK_SIZE);
         if (slice instanceof Promise)
           slice = await slice;
-        if (!slice) {
+        if (!slice || slice.length === 0) {
           break;
         }
-        chunks.push(readBytes(slice, slice.length));
+        const chunk = readBytes(slice, slice.length);
+        chunks.push(chunk);
         currentSize += slice.length;
       }
       const joined = new Uint8Array(currentSize);
@@ -20774,7 +21956,7 @@ const parseId3V1Tag = (slice, tags) => {
   const yearText = readId3V1String(slice, 4);
   const year = Number.parseInt(yearText, 10);
   if (Number.isInteger(year) && year > 0) {
-    tags.date ?? (tags.date = new Date(year, 0, 1));
+    tags.date ?? (tags.date = new Date(String(year)));
   }
   const commentBytes = readBytes(slice, 30);
   let comment;
@@ -20818,20 +22000,21 @@ const readId3V2Header = (slice) => {
     slice.filePos = startPos;
     return null;
   }
-  const size = decodeSynchsafe(sizeRaw);
+  let size = decodeSynchsafe(sizeRaw);
+  if (flags & Id3V2HeaderFlags.Footer) {
+    size += ID3_V2_HEADER_SIZE;
+  }
   return { majorVersion, revision, flags, size };
 };
 const parseId3V2Tag = (slice, header, tags) => {
   var _a, _b, _c, _d, _e;
   if (![2, 3, 4].includes(header.majorVersion)) {
-    console.warn(`Unsupported ID3v2 major version: ${header.majorVersion}`);
+    Logging._warn(`Unsupported ID3v2 major version: ${header.majorVersion}`);
     return;
   }
-  const bytes = readBytes(slice, header.size);
+  const dataSize = header.flags & Id3V2HeaderFlags.Footer ? header.size - ID3_V2_HEADER_SIZE : header.size;
+  const bytes = readBytes(slice, dataSize);
   const reader = new Id3V2Reader(header, bytes);
-  if (header.flags & Id3V2HeaderFlags.Footer) {
-    reader.removeFooter();
-  }
   if (header.flags & Id3V2HeaderFlags.Unsynchronisation && header.majorVersion === 3) {
     reader.ununsynchronizeAll();
   }
@@ -20862,12 +22045,12 @@ const parseId3V2Tag = (slice, header, tags) => {
       frameUnsynchronized = !!(frame.flags & 1 << 1) || !!(header.flags & Id3V2HeaderFlags.Unsynchronisation);
     }
     if (frameEncrypted) {
-      console.warn(`Skipping encrypted ID3v2 frame ${frame.id}`);
+      Logging._warn(`Skipping encrypted ID3v2 frame ${frame.id}`);
       reader.pos = frameEndPos;
       continue;
     }
     if (frameCompressed) {
-      console.warn(`Skipping compressed ID3v2 frame ${frame.id}`);
+      Logging._warn(`Skipping compressed ID3v2 frame ${frame.id}`);
       reader.pos = frameEndPos;
       continue;
     }
@@ -20987,7 +22170,7 @@ const parseId3V2Tag = (slice, header, tags) => {
           const yearText = reader.readId3V2EncodingAndText(frameEndPos);
           const year = Number.parseInt(yearText, 10);
           if (Number.isInteger(year)) {
-            tags.date ?? (tags.date = new Date(year, 0, 1));
+            tags.date ?? (tags.date = new Date(String(year)));
           }
         }
         break;
@@ -21090,10 +22273,6 @@ class Id3V2Reader {
     this.bytes.set(after, before.length + newBytes.length);
     this.view = new DataView(this.bytes.buffer);
   }
-  removeFooter() {
-    this.bytes = this.bytes.subarray(0, this.bytes.length - ID3_V2_HEADER_SIZE);
-    this.view = new DataView(this.bytes.buffer);
-  }
   readBytes(length) {
     const slice = this.bytes.subarray(this.pos, this.pos + length);
     this.pos += length;
@@ -21111,7 +22290,7 @@ class Id3V2Reader {
   }
   readU24() {
     const high = this.view.getUint16(this.pos, false);
-    const low = this.view.getUint8(this.pos + 1);
+    const low = this.view.getUint8(this.pos + 2);
     this.pos += 3;
     return high * 256 + low;
   }
@@ -21315,59 +22494,64 @@ class AudioEngine {
       return;
     await this.stopIterator();
     this.audioIterator = this.audioSink.buffers(this.currentTime);
+    const BATCH_SIZE = 16;
     while (true) {
       if (localId !== this.asyncId || this.paused)
         return;
-      const nextPromise = this.audioIterator.next();
-      const checkStarvation = setInterval(() => {
-        if (localId !== this.asyncId || this.paused) {
-          clearInterval(checkStarvation);
-          return;
-        }
-        if (this.audioContext.state === "running" && this.audioContext.currentTime >= this.latestScheduledEndTime - 0.2) {
-          this.audioContext.suspend();
-          this.events.emit("waiting");
-        }
-      }, 50);
-      let result;
+      const batch = [];
+      let batchDone = false;
       try {
-        result = await nextPromise;
+        for (let i = 0; i < BATCH_SIZE; i++) {
+          const result = await this.audioIterator.next();
+          if (result.done) {
+            batchDone = true;
+            break;
+          }
+          batch.push(result.value);
+        }
       } catch (e) {
         console.error("Audio iterator error:", e);
-        break;
-      } finally {
-        clearInterval(checkStarvation);
+        batchDone = true;
       }
       if (localId !== this.asyncId || this.paused)
         return;
-      if (this.audioContext.state === "suspended") {
+      if (batch.length > 0 && this.audioContext.state === "suspended") {
         await this.audioContext.resume();
         this.events.emit("canplay");
         this.events.emit("playing");
       }
-      if (result.done)
+      for (const { buffer, timestamp } of batch) {
+        const node = this.audioContext.createBufferSource();
+        node.buffer = buffer;
+        node.connect(this.gainNode);
+        node.playbackRate.value = this.playbackRate;
+        const startAt = this.audioContextStartTime + (timestamp - this.playbackTimeAtStart) / this.playbackRate;
+        const duration = buffer.duration;
+        const endAt = startAt + duration / this.playbackRate;
+        const endMediaTime = (endAt - this.audioContextStartTime) * this.playbackRate + this.playbackTimeAtStart;
+        if (endMediaTime > this.latestScheduledEndTime) {
+          this.latestScheduledEndTime = endMediaTime;
+        }
+        if (startAt >= this.audioContext.currentTime) {
+          node.start(startAt);
+        } else {
+          node.start(
+            this.audioContext.currentTime,
+            (this.audioContext.currentTime - startAt) * this.playbackRate
+          );
+        }
+        this.queuedNodes.add(node);
+        node.onended = () => this.queuedNodes.delete(node);
+      }
+      if (batchDone)
         break;
-      const { buffer, timestamp } = result.value;
-      const node = this.audioContext.createBufferSource();
-      node.buffer = buffer;
-      node.connect(this.gainNode);
-      node.playbackRate.value = this.playbackRate;
-      const startAt = this.audioContextStartTime + (timestamp - this.playbackTimeAtStart) / this.playbackRate;
-      const duration = buffer.duration;
-      const endAt = startAt + duration / this.playbackRate;
-      if (endAt > this.latestScheduledEndTime) {
-        this.latestScheduledEndTime = endAt;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const BUFFER_AHEAD = 1;
+      while (this.latestScheduledEndTime - this.currentTime > BUFFER_AHEAD) {
+        if (localId !== this.asyncId || this.paused)
+          return;
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
-      if (startAt >= this.audioContext.currentTime) {
-        node.start(startAt);
-      } else {
-        node.start(
-          this.audioContext.currentTime,
-          (this.audioContext.currentTime - startAt) * this.playbackRate
-        );
-      }
-      this.queuedNodes.add(node);
-      node.onended = () => this.queuedNodes.delete(node);
     }
   }
   async play() {
@@ -21380,7 +22564,7 @@ class AudioEngine {
       await this.audioContext.resume();
     }
     this.audioContextStartTime = this.audioContext.currentTime;
-    this.latestScheduledEndTime = this.audioContextStartTime;
+    this.latestScheduledEndTime = this.playbackTimeAtStart;
     this.paused = false;
     const id = ++this.asyncId;
     this.runIterator(id);
@@ -21396,7 +22580,7 @@ class AudioEngine {
   async seek(time) {
     this.playbackTimeAtStart = Math.max(0, time);
     this.audioContextStartTime = this.audioContext.currentTime;
-    this.latestScheduledEndTime = this.audioContextStartTime;
+    this.latestScheduledEndTime = this.playbackTimeAtStart;
     const id = ++this.asyncId;
     if (!this.paused) {
       this.runIterator(id);

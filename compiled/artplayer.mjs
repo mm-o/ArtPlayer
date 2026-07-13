@@ -13,7 +13,7 @@ var hasRequiredOptionValidator;
 function requireOptionValidator() {
   if (hasRequiredOptionValidator) return optionValidator$1.exports;
   hasRequiredOptionValidator = 1;
-  (function(module, exports$1) {
+  (function(module, exports) {
     !(function(r, t) {
       module.exports = t();
     })(optionValidator, function() {
