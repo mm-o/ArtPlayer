@@ -101,6 +101,18 @@ export default class Subtitle extends Component {
         return subUrl;
     }
 
+    clear() {
+        const { template } = this.art;
+        URL.revokeObjectURL(this.url);
+        template.$subtitle.innerHTML = '';
+        this.option = null;
+        this.art.events.remove(this.destroyEvent);
+        this.destroyEvent = () => null;
+        this.createTrack('metadata', '');
+        this.show = false;
+        this.art.emit('subtitleLoad', [], this.option);
+    }
+
     createTrack(kind, url) {
         const { template, proxy, option } = this.art;
         const { $video, $track } = template;

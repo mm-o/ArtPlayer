@@ -1,0 +1,17 @@
+import { append } from '../utils';
+
+const icon =
+    '<svg viewBox="0 0 24 24" style="fill:none;stroke:var(--art-font-color);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>';
+
+export default function playlist(option) {
+    return (art) => ({
+        ...option,
+        tooltip: art.i18n.get('Playlist'),
+        mounted: ($control) => {
+            append($control, icon);
+        },
+        click: () => {
+            art.playlistToggle();
+        },
+    });
+}

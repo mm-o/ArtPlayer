@@ -19,6 +19,7 @@ export type Template = {
     readonly $mask: HTMLDivElement;
     readonly $state: HTMLDivElement;
     readonly $setting: HTMLDivElement;
+    readonly $playlist: HTMLDivElement;
     readonly $info: HTMLDivElement;
     readonly $infoPanel: HTMLDivElement;
     readonly $infoClose: HTMLDivElement;

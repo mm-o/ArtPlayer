@@ -1,4 +1,4 @@
-import { secondToTime, download, def, createElement } from '../utils';
+import { def } from '../utils/property.js';
 
 export default function screenshotMix(art) {
     const {
@@ -6,15 +6,23 @@ export default function screenshotMix(art) {
         template: { $video },
     } = art;
 
-    const $canvas = createElement('canvas');
+    const $canvas = document.createElement('canvas');
+
+    function drawVideo() {
+        $canvas.width = $video.videoWidth;
+        $canvas.height = $video.videoHeight;
+        $canvas.getContext('2d').drawImage($video, 0, 0);
+    }
+
+    function getMimeType(format) {
+        return `image/${format === 'jpeg' || format === 'webp' ? format : 'png'}`;
+    }
 
     def(art, 'getDataURL', {
         value: () =>
             new Promise((resolve, reject) => {
                 try {
-                    $canvas.width = $video.videoWidth;
-                    $canvas.height = $video.videoHeight;
-                    $canvas.getContext('2d').drawImage($video, 0, 0);
+                    drawVideo();
                     resolve($canvas.toDataURL('image/png'));
                 } catch (err) {
                     notice.show = err;
@@ -27,9 +35,7 @@ export default function screenshotMix(art) {
         value: () =>
             new Promise((resolve, reject) => {
                 try {
-                    $canvas.width = $video.videoWidth;
-                    $canvas.height = $video.videoHeight;
-                    $canvas.getContext('2d').drawImage($video, 0, 0);
+                    drawVideo();
                     $canvas.toBlob((blob) => {
                         resolve(URL.createObjectURL(blob));
                     });
@@ -40,13 +46,36 @@ export default function screenshotMix(art) {
             }),
     });
 
+    def(art, 'getScreenshotBlob', {
+        value: (format = 'png', quality = 0.92) =>
+            new Promise((resolve, reject) => {
+                try {
+                    drawVideo();
+                    $canvas.toBlob(resolve, getMimeType(format), quality);
+                } catch (err) {
+                    notice.show = err;
+                    reject(err);
+                }
+            }),
+    });
+
     def(art, 'screenshot', {
-        value: async (name) => {
-            const dataUri = await art.getDataURL();
-            const fileName = name || `artplayer_${secondToTime($video.currentTime)}`;
-            download(dataUri, `${fileName}.png`);
-            art.emit('screenshot', dataUri);
-            return dataUri;
+        value: async (format = 'png', quality = 0.92) => {
+            const blob = await art.getScreenshotBlob(format, quality);
+            const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : null;
+
+            if (!blob || !clipboard?.write || typeof ClipboardItem === 'undefined') {
+                const error = new Error('Clipboard is not supported');
+                notice.show = error;
+                throw error;
+            }
+
+            await clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+            notice.show = 'Screenshot copied';
+            art.emit('screenshot', blob);
+            art.emitAction?.('screenshot', { blob });
+
+            return blob;
         },
     });
 }

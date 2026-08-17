@@ -62,8 +62,8 @@ export function inverseClass(target, className) {
 export function tooltip(target, msg, pos = 'top') {
     if (isMobile) return;
     target.setAttribute('aria-label', msg);
-    addClass(target, 'hint--rounded');
-    addClass(target, `hint--${pos}`);
+    addClass(target, 'art-hint--rounded');
+    addClass(target, `art-hint--${pos}`);
 }
 
 export function isInViewport(el, offset = 0) {

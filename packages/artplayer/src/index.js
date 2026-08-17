@@ -21,6 +21,7 @@ import Icons from './icons';
 import Setting from './setting';
 import Storage from './storage';
 import Plugins from './plugins';
+import { normalizeMedia } from './runtime/media';
 
 let id = 0;
 const instances = [];
@@ -121,6 +122,10 @@ export default class Artplayer extends Emitter {
         return Template.html;
     }
 
+    static get normalizeMedia() {
+        return normalizeMedia;
+    }
+
     static get option() {
         return {
             id: '',
@@ -140,6 +145,8 @@ export default class Artplayer extends Emitter {
             playbackRate: false,
             aspectRatio: false,
             screenshot: false,
+            actions: false,
+            playlist: false,
             setting: false,
             hotkey: true,
             pip: false,

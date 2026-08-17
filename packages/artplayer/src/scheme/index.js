@@ -52,6 +52,8 @@ export default {
     playbackRate: b,
     aspectRatio: b,
     screenshot: b,
+    actions: `?${b}|${a}`,
+    playlist: b,
     setting: b,
     hotkey: b,
     pip: b,

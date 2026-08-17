@@ -31,6 +31,9 @@ import subtitleOffsetMix from './subtitleOffsetMix';
 import airplayMix from './airplayMix';
 import qualityMix from './qualityMix';
 import thumbnailsMix from './thumbnailsMix';
+import mediaMix from './mediaMix';
+import actionMix from './actionMix';
+import playlistMix from './playlist/index.js';
 import optionInit from './optionInit';
 import eventInit from './eventInit';
 
@@ -69,6 +72,9 @@ export default class Player {
         airplayMix(art);
         qualityMix(art);
         thumbnailsMix(art);
+        mediaMix(art);
+        actionMix(art);
+        playlistMix(art);
         eventInit(art);
         optionInit(art);
     }

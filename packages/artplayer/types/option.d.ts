@@ -7,7 +7,8 @@ import { quality } from './quality';
 import { ComponentOption } from './component';
 import Artplayer = require('./artplayer');
 
-export type CustomType = 'flv' | 'm3u8' | 'hls' | 'ts' | 'mpd' | 'torrent' | (string & Record<never, never>);
+export type CustomType = 'flv' | 'm3u8' | 'hls' | 'ts' | 'mpd' | 'dash' | 'torrent' | (string & Record<never, never>);
+export type ActionType = 'timestamp' | 'loopSegment' | 'mediaNotes';
 
 export type Thumbnails = {
     /**
@@ -131,6 +132,16 @@ export type Option = {
      * Whether show video screenshot button
      */
     screenshot?: boolean;
+
+    /**
+     * Whether show native action buttons
+     */
+    actions?: boolean | ActionType[];
+
+    /**
+     * Whether show native playlist panel
+     */
+    playlist?: boolean;
 
     /**
      * Whether show video setting button

@@ -23,8 +23,7 @@
  * Classes added:
  * 	1) hint
  */
-.art-video-player {
-[class*='hint--'] {
+[class*='art-hint--'] {
     position: relative;
     display: inline-block;
     font-style: normal;
@@ -35,8 +34,8 @@
        * tooltip body
        */
 }
-[class*='hint--']:before,
-[class*='hint--']:after {
+[class*='art-hint--']:before,
+[class*='art-hint--']:after {
     position: absolute;
     -webkit-transform: translate3d(0, 0, 0);
     -moz-transform: translate3d(0, 0, 0);
@@ -52,25 +51,25 @@
     -moz-transition-delay: 0ms;
     transition-delay: 0ms;
 }
-[class*='hint--']:hover:before,
-[class*='hint--']:hover:after {
+[class*='art-hint--']:hover:before,
+[class*='art-hint--']:hover:after {
     visibility: visible;
     opacity: 1;
 }
-[class*='hint--']:hover:before,
-[class*='hint--']:hover:after {
+[class*='art-hint--']:hover:before,
+[class*='art-hint--']:hover:after {
     -webkit-transition-delay: 100ms;
     -moz-transition-delay: 100ms;
     transition-delay: 100ms;
 }
-[class*='hint--']:before {
+[class*='art-hint--']:before {
     content: '';
     position: absolute;
     background: transparent;
     border: 6px solid transparent;
     z-index: 1000001;
 }
-[class*='hint--']:after {
+[class*='art-hint--']:after {
     background: #000000;
     color: white;
     padding: 8px 10px;
@@ -79,10 +78,10 @@
     line-height: 12px;
     white-space: nowrap;
 }
-[class*='hint--'][aria-label]:after {
+[class*='art-hint--'][aria-label]:after {
     content: attr(aria-label);
 }
-[class*='hint--'][data-hint]:after {
+[class*='art-hint--'][data-hint]:after {
     content: attr(data-hint);
 }
 
@@ -99,76 +98,76 @@
    * Defines the positoning logic for the tooltips.
    *
    * Classes added:
-   * 	1) hint--top
-   * 	2) hint--bottom
-   * 	3) hint--left
-   * 	4) hint--right
+   * 	1) art-hint--top
+   * 	2) art-hint--bottom
+   * 	3) art-hint--left
+   * 	4) art-hint--right
    */
 /**
    * set default color for tooltip arrows
    */
-.hint--top-left:before {
+.art-hint--top-left:before {
     border-top-color: #000000;
 }
 
-.hint--top-right:before {
+.art-hint--top-right:before {
     border-top-color: #000000;
 }
 
-.hint--top:before {
+.art-hint--top:before {
     border-top-color: #000000;
 }
 
-.hint--bottom-left:before {
+.art-hint--bottom-left:before {
     border-bottom-color: #000000;
 }
 
-.hint--bottom-right:before {
+.art-hint--bottom-right:before {
     border-bottom-color: #000000;
 }
 
-.hint--bottom:before {
+.art-hint--bottom:before {
     border-bottom-color: #000000;
 }
 
-.hint--left:before {
+.art-hint--left:before {
     border-left-color: #000000;
 }
 
-.hint--right:before {
+.art-hint--right:before {
     border-right-color: #000000;
 }
 
 /**
    * top tooltip
    */
-.hint--top:before {
+.art-hint--top:before {
     margin-bottom: -11px;
 }
 
-.hint--top:before,
-.hint--top:after {
+.art-hint--top:before,
+.art-hint--top:after {
     bottom: 100%;
     left: 50%;
 }
 
-.hint--top:before {
+.art-hint--top:before {
     left: calc(50% - 6px);
 }
 
-.hint--top:after {
+.art-hint--top:after {
     -webkit-transform: translateX(-50%);
     -moz-transform: translateX(-50%);
     transform: translateX(-50%);
 }
 
-.hint--top:hover:before {
+.art-hint--top:hover:before {
     -webkit-transform: translateY(-8px);
     -moz-transform: translateY(-8px);
     transform: translateY(-8px);
 }
 
-.hint--top:hover:after {
+.art-hint--top:hover:after {
     -webkit-transform: translateX(-50%) translateY(-8px);
     -moz-transform: translateX(-50%) translateY(-8px);
     transform: translateX(-50%) translateY(-8px);
@@ -177,33 +176,33 @@
 /**
    * bottom tooltip
    */
-.hint--bottom:before {
+.art-hint--bottom:before {
     margin-top: -11px;
 }
 
-.hint--bottom:before,
-.hint--bottom:after {
+.art-hint--bottom:before,
+.art-hint--bottom:after {
     top: 100%;
     left: 50%;
 }
 
-.hint--bottom:before {
+.art-hint--bottom:before {
     left: calc(50% - 6px);
 }
 
-.hint--bottom:after {
+.art-hint--bottom:after {
     -webkit-transform: translateX(-50%);
     -moz-transform: translateX(-50%);
     transform: translateX(-50%);
 }
 
-.hint--bottom:hover:before {
+.art-hint--bottom:hover:before {
     -webkit-transform: translateY(8px);
     -moz-transform: translateY(8px);
     transform: translateY(8px);
 }
 
-.hint--bottom:hover:after {
+.art-hint--bottom:hover:after {
     -webkit-transform: translateX(-50%) translateY(8px);
     -moz-transform: translateX(-50%) translateY(8px);
     transform: translateX(-50%) translateY(8px);
@@ -212,28 +211,28 @@
 /**
    * right tooltip
    */
-.hint--right:before {
+.art-hint--right:before {
     margin-left: -11px;
     margin-bottom: -6px;
 }
 
-.hint--right:after {
+.art-hint--right:after {
     margin-bottom: -14px;
 }
 
-.hint--right:before,
-.hint--right:after {
+.art-hint--right:before,
+.art-hint--right:after {
     left: 100%;
     bottom: 50%;
 }
 
-.hint--right:hover:before {
+.art-hint--right:hover:before {
     -webkit-transform: translateX(8px);
     -moz-transform: translateX(8px);
     transform: translateX(8px);
 }
 
-.hint--right:hover:after {
+.art-hint--right:hover:after {
     -webkit-transform: translateX(8px);
     -moz-transform: translateX(8px);
     transform: translateX(8px);
@@ -242,28 +241,28 @@
 /**
    * left tooltip
    */
-.hint--left:before {
+.art-hint--left:before {
     margin-right: -11px;
     margin-bottom: -6px;
 }
 
-.hint--left:after {
+.art-hint--left:after {
     margin-bottom: -14px;
 }
 
-.hint--left:before,
-.hint--left:after {
+.art-hint--left:before,
+.art-hint--left:after {
     right: 100%;
     bottom: 50%;
 }
 
-.hint--left:hover:before {
+.art-hint--left:hover:before {
     -webkit-transform: translateX(-8px);
     -moz-transform: translateX(-8px);
     transform: translateX(-8px);
 }
 
-.hint--left:hover:after {
+.art-hint--left:hover:after {
     -webkit-transform: translateX(-8px);
     -moz-transform: translateX(-8px);
     transform: translateX(-8px);
@@ -272,37 +271,37 @@
 /**
    * top-left tooltip
    */
-.hint--top-left:before {
+.art-hint--top-left:before {
     margin-bottom: -11px;
 }
 
-.hint--top-left:before,
-.hint--top-left:after {
+.art-hint--top-left:before,
+.art-hint--top-left:after {
     bottom: 100%;
     left: 50%;
 }
 
-.hint--top-left:before {
+.art-hint--top-left:before {
     left: calc(50% - 6px);
 }
 
-.hint--top-left:after {
+.art-hint--top-left:after {
     -webkit-transform: translateX(-100%);
     -moz-transform: translateX(-100%);
     transform: translateX(-100%);
 }
 
-.hint--top-left:after {
+.art-hint--top-left:after {
     margin-left: 12px;
 }
 
-.hint--top-left:hover:before {
+.art-hint--top-left:hover:before {
     -webkit-transform: translateY(-8px);
     -moz-transform: translateY(-8px);
     transform: translateY(-8px);
 }
 
-.hint--top-left:hover:after {
+.art-hint--top-left:hover:after {
     -webkit-transform: translateX(-100%) translateY(-8px);
     -moz-transform: translateX(-100%) translateY(-8px);
     transform: translateX(-100%) translateY(-8px);
@@ -311,37 +310,37 @@
 /**
    * top-right tooltip
    */
-.hint--top-right:before {
+.art-hint--top-right:before {
     margin-bottom: -11px;
 }
 
-.hint--top-right:before,
-.hint--top-right:after {
+.art-hint--top-right:before,
+.art-hint--top-right:after {
     bottom: 100%;
     left: 50%;
 }
 
-.hint--top-right:before {
+.art-hint--top-right:before {
     left: calc(50% - 6px);
 }
 
-.hint--top-right:after {
+.art-hint--top-right:after {
     -webkit-transform: translateX(0);
     -moz-transform: translateX(0);
     transform: translateX(0);
 }
 
-.hint--top-right:after {
+.art-hint--top-right:after {
     margin-left: -12px;
 }
 
-.hint--top-right:hover:before {
+.art-hint--top-right:hover:before {
     -webkit-transform: translateY(-8px);
     -moz-transform: translateY(-8px);
     transform: translateY(-8px);
 }
 
-.hint--top-right:hover:after {
+.art-hint--top-right:hover:after {
     -webkit-transform: translateY(-8px);
     -moz-transform: translateY(-8px);
     transform: translateY(-8px);
@@ -350,37 +349,37 @@
 /**
    * bottom-left tooltip
    */
-.hint--bottom-left:before {
+.art-hint--bottom-left:before {
     margin-top: -11px;
 }
 
-.hint--bottom-left:before,
-.hint--bottom-left:after {
+.art-hint--bottom-left:before,
+.art-hint--bottom-left:after {
     top: 100%;
     left: 50%;
 }
 
-.hint--bottom-left:before {
+.art-hint--bottom-left:before {
     left: calc(50% - 6px);
 }
 
-.hint--bottom-left:after {
+.art-hint--bottom-left:after {
     -webkit-transform: translateX(-100%);
     -moz-transform: translateX(-100%);
     transform: translateX(-100%);
 }
 
-.hint--bottom-left:after {
+.art-hint--bottom-left:after {
     margin-left: 12px;
 }
 
-.hint--bottom-left:hover:before {
+.art-hint--bottom-left:hover:before {
     -webkit-transform: translateY(8px);
     -moz-transform: translateY(8px);
     transform: translateY(8px);
 }
 
-.hint--bottom-left:hover:after {
+.art-hint--bottom-left:hover:after {
     -webkit-transform: translateX(-100%) translateY(8px);
     -moz-transform: translateX(-100%) translateY(8px);
     transform: translateX(-100%) translateY(8px);
@@ -389,37 +388,37 @@
 /**
    * bottom-right tooltip
    */
-.hint--bottom-right:before {
+.art-hint--bottom-right:before {
     margin-top: -11px;
 }
 
-.hint--bottom-right:before,
-.hint--bottom-right:after {
+.art-hint--bottom-right:before,
+.art-hint--bottom-right:after {
     top: 100%;
     left: 50%;
 }
 
-.hint--bottom-right:before {
+.art-hint--bottom-right:before {
     left: calc(50% - 6px);
 }
 
-.hint--bottom-right:after {
+.art-hint--bottom-right:after {
     -webkit-transform: translateX(0);
     -moz-transform: translateX(0);
     transform: translateX(0);
 }
 
-.hint--bottom-right:after {
+.art-hint--bottom-right:after {
     margin-left: -12px;
 }
 
-.hint--bottom-right:hover:before {
+.art-hint--bottom-right:hover:before {
     -webkit-transform: translateY(8px);
     -moz-transform: translateY(8px);
     transform: translateY(8px);
 }
 
-.hint--bottom-right:hover:after {
+.art-hint--bottom-right:hover:after {
     -webkit-transform: translateY(8px);
     -moz-transform: translateY(8px);
     transform: translateY(8px);
@@ -432,28 +431,28 @@
    * across multiple lines.
    *
    * Classes added:
-   * 	1) hint--small
-   * 	2) hint--medium
-   * 	3) hint--large
+   * 	1) art-hint--small
+   * 	2) art-hint--medium
+   * 	3) art-hint--large
    *
    */
-.hint--small:after,
-.hint--medium:after,
-.hint--large:after {
+.art-hint--small:after,
+.art-hint--medium:after,
+.art-hint--large:after {
     white-space: normal;
     line-height: 1.4em;
     word-wrap: break-word;
 }
 
-.hint--small:after {
+.art-hint--small:after {
     width: 80px;
 }
 
-.hint--medium:after {
+.art-hint--medium:after {
     width: 150px;
 }
 
-.hint--large:after {
+.art-hint--large:after {
     width: 300px;
 }
 
@@ -463,12 +462,12 @@
    * Defines basic theme for tooltips.
    *
    */
-[class*='hint--'] {
+[class*='art-hint--'] {
     /**
        * tooltip body
        */
 }
-[class*='hint--']:after {
+[class*='art-hint--']:after {
     text-shadow: 0 -1px 0px black;
     box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3);
 }
@@ -479,169 +478,169 @@
    * Contains tooltips of various types based on color differences.
    *
    * Classes added:
-   * 	1) hint--error
-   * 	2) hint--warning
-   * 	3) hint--info
-   * 	4) hint--success
+   * 	1) art-hint--error
+   * 	2) art-hint--warning
+   * 	3) art-hint--info
+   * 	4) art-hint--success
    *
    */
 /**
    * Error
    */
-.hint--error:after {
+.art-hint--error:after {
     background-color: #b34e4d;
     text-shadow: 0 -1px 0px #592726;
 }
 
-.hint--error.hint--top-left:before {
+.art-hint--error.art-hint--top-left:before {
     border-top-color: #b34e4d;
 }
 
-.hint--error.hint--top-right:before {
+.art-hint--error.art-hint--top-right:before {
     border-top-color: #b34e4d;
 }
 
-.hint--error.hint--top:before {
+.art-hint--error.art-hint--top:before {
     border-top-color: #b34e4d;
 }
 
-.hint--error.hint--bottom-left:before {
+.art-hint--error.art-hint--bottom-left:before {
     border-bottom-color: #b34e4d;
 }
 
-.hint--error.hint--bottom-right:before {
+.art-hint--error.art-hint--bottom-right:before {
     border-bottom-color: #b34e4d;
 }
 
-.hint--error.hint--bottom:before {
+.art-hint--error.art-hint--bottom:before {
     border-bottom-color: #b34e4d;
 }
 
-.hint--error.hint--left:before {
+.art-hint--error.art-hint--left:before {
     border-left-color: #b34e4d;
 }
 
-.hint--error.hint--right:before {
+.art-hint--error.art-hint--right:before {
     border-right-color: #b34e4d;
 }
 
 /**
    * Warning
    */
-.hint--warning:after {
+.art-hint--warning:after {
     background-color: #c09854;
     text-shadow: 0 -1px 0px #6c5328;
 }
 
-.hint--warning.hint--top-left:before {
+.art-hint--warning.art-hint--top-left:before {
     border-top-color: #c09854;
 }
 
-.hint--warning.hint--top-right:before {
+.art-hint--warning.art-hint--top-right:before {
     border-top-color: #c09854;
 }
 
-.hint--warning.hint--top:before {
+.art-hint--warning.art-hint--top:before {
     border-top-color: #c09854;
 }
 
-.hint--warning.hint--bottom-left:before {
+.art-hint--warning.art-hint--bottom-left:before {
     border-bottom-color: #c09854;
 }
 
-.hint--warning.hint--bottom-right:before {
+.art-hint--warning.art-hint--bottom-right:before {
     border-bottom-color: #c09854;
 }
 
-.hint--warning.hint--bottom:before {
+.art-hint--warning.art-hint--bottom:before {
     border-bottom-color: #c09854;
 }
 
-.hint--warning.hint--left:before {
+.art-hint--warning.art-hint--left:before {
     border-left-color: #c09854;
 }
 
-.hint--warning.hint--right:before {
+.art-hint--warning.art-hint--right:before {
     border-right-color: #c09854;
 }
 
 /**
    * Info
    */
-.hint--info:after {
+.art-hint--info:after {
     background-color: #3986ac;
     text-shadow: 0 -1px 0px #1a3c4d;
 }
 
-.hint--info.hint--top-left:before {
+.art-hint--info.art-hint--top-left:before {
     border-top-color: #3986ac;
 }
 
-.hint--info.hint--top-right:before {
+.art-hint--info.art-hint--top-right:before {
     border-top-color: #3986ac;
 }
 
-.hint--info.hint--top:before {
+.art-hint--info.art-hint--top:before {
     border-top-color: #3986ac;
 }
 
-.hint--info.hint--bottom-left:before {
+.art-hint--info.art-hint--bottom-left:before {
     border-bottom-color: #3986ac;
 }
 
-.hint--info.hint--bottom-right:before {
+.art-hint--info.art-hint--bottom-right:before {
     border-bottom-color: #3986ac;
 }
 
-.hint--info.hint--bottom:before {
+.art-hint--info.art-hint--bottom:before {
     border-bottom-color: #3986ac;
 }
 
-.hint--info.hint--left:before {
+.art-hint--info.art-hint--left:before {
     border-left-color: #3986ac;
 }
 
-.hint--info.hint--right:before {
+.art-hint--info.art-hint--right:before {
     border-right-color: #3986ac;
 }
 
 /**
    * Success
    */
-.hint--success:after {
+.art-hint--success:after {
     background-color: #458746;
     text-shadow: 0 -1px 0px #1a321a;
 }
 
-.hint--success.hint--top-left:before {
+.art-hint--success.art-hint--top-left:before {
     border-top-color: #458746;
 }
 
-.hint--success.hint--top-right:before {
+.art-hint--success.art-hint--top-right:before {
     border-top-color: #458746;
 }
 
-.hint--success.hint--top:before {
+.art-hint--success.art-hint--top:before {
     border-top-color: #458746;
 }
 
-.hint--success.hint--bottom-left:before {
+.art-hint--success.art-hint--bottom-left:before {
     border-bottom-color: #458746;
 }
 
-.hint--success.hint--bottom-right:before {
+.art-hint--success.art-hint--bottom-right:before {
     border-bottom-color: #458746;
 }
 
-.hint--success.hint--bottom:before {
+.art-hint--success.art-hint--bottom:before {
     border-bottom-color: #458746;
 }
 
-.hint--success.hint--left:before {
+.art-hint--success.art-hint--left:before {
     border-left-color: #458746;
 }
 
-.hint--success.hint--right:before {
+.art-hint--success.art-hint--right:before {
     border-right-color: #458746;
 }
 
@@ -651,106 +650,106 @@
    * Defines a persisted tooltip which shows always.
    *
    * Classes added:
-   * 	1) hint--always
+   * 	1) art-hint--always
    *
    */
-.hint--always:after,
-.hint--always:before {
+.art-hint--always:after,
+.art-hint--always:before {
     opacity: 1;
     visibility: visible;
 }
 
-.hint--always.hint--top:before {
+.art-hint--always.art-hint--top:before {
     -webkit-transform: translateY(-8px);
     -moz-transform: translateY(-8px);
     transform: translateY(-8px);
 }
 
-.hint--always.hint--top:after {
+.art-hint--always.art-hint--top:after {
     -webkit-transform: translateX(-50%) translateY(-8px);
     -moz-transform: translateX(-50%) translateY(-8px);
     transform: translateX(-50%) translateY(-8px);
 }
 
-.hint--always.hint--top-left:before {
+.art-hint--always.art-hint--top-left:before {
     -webkit-transform: translateY(-8px);
     -moz-transform: translateY(-8px);
     transform: translateY(-8px);
 }
 
-.hint--always.hint--top-left:after {
+.art-hint--always.art-hint--top-left:after {
     -webkit-transform: translateX(-100%) translateY(-8px);
     -moz-transform: translateX(-100%) translateY(-8px);
     transform: translateX(-100%) translateY(-8px);
 }
 
-.hint--always.hint--top-right:before {
+.art-hint--always.art-hint--top-right:before {
     -webkit-transform: translateY(-8px);
     -moz-transform: translateY(-8px);
     transform: translateY(-8px);
 }
 
-.hint--always.hint--top-right:after {
+.art-hint--always.art-hint--top-right:after {
     -webkit-transform: translateY(-8px);
     -moz-transform: translateY(-8px);
     transform: translateY(-8px);
 }
 
-.hint--always.hint--bottom:before {
+.art-hint--always.art-hint--bottom:before {
     -webkit-transform: translateY(8px);
     -moz-transform: translateY(8px);
     transform: translateY(8px);
 }
 
-.hint--always.hint--bottom:after {
+.art-hint--always.art-hint--bottom:after {
     -webkit-transform: translateX(-50%) translateY(8px);
     -moz-transform: translateX(-50%) translateY(8px);
     transform: translateX(-50%) translateY(8px);
 }
 
-.hint--always.hint--bottom-left:before {
+.art-hint--always.art-hint--bottom-left:before {
     -webkit-transform: translateY(8px);
     -moz-transform: translateY(8px);
     transform: translateY(8px);
 }
 
-.hint--always.hint--bottom-left:after {
+.art-hint--always.art-hint--bottom-left:after {
     -webkit-transform: translateX(-100%) translateY(8px);
     -moz-transform: translateX(-100%) translateY(8px);
     transform: translateX(-100%) translateY(8px);
 }
 
-.hint--always.hint--bottom-right:before {
+.art-hint--always.art-hint--bottom-right:before {
     -webkit-transform: translateY(8px);
     -moz-transform: translateY(8px);
     transform: translateY(8px);
 }
 
-.hint--always.hint--bottom-right:after {
+.art-hint--always.art-hint--bottom-right:after {
     -webkit-transform: translateY(8px);
     -moz-transform: translateY(8px);
     transform: translateY(8px);
 }
 
-.hint--always.hint--left:before {
+.art-hint--always.art-hint--left:before {
     -webkit-transform: translateX(-8px);
     -moz-transform: translateX(-8px);
     transform: translateX(-8px);
 }
 
-.hint--always.hint--left:after {
+.art-hint--always.art-hint--left:after {
     -webkit-transform: translateX(-8px);
     -moz-transform: translateX(-8px);
     transform: translateX(-8px);
 }
 
-.hint--always.hint--right:before {
+.art-hint--always.art-hint--right:before {
     -webkit-transform: translateX(8px);
     -moz-transform: translateX(8px);
     transform: translateX(8px);
 }
 
-.hint--always.hint--right:after {
+.art-hint--always.art-hint--right:after {
     -webkit-transform: translateX(8px);
     -moz-transform: translateX(8px);
     transform: translateX(8px);
@@ -762,10 +761,10 @@
    * Defines rounded corner tooltips.
    *
    * Classes added:
-   * 	1) hint--rounded
+   * 	1) art-hint--rounded
    *
    */
-.hint--rounded:after {
+.art-hint--rounded:after {
     border-radius: 4px;
 }
 
@@ -775,19 +774,19 @@
    * Defines various transition effects for the tooltips.
    *
    * Classes added:
-   * 	1) hint--no-animate
-   * 	2) hint--bounce
+   * 	1) art-hint--no-animate
+   * 	2) art-hint--bounce
    *
    */
-.hint--no-animate:before,
-.hint--no-animate:after {
+.art-hint--no-animate:before,
+.art-hint--no-animate:after {
     -webkit-transition-duration: 0ms;
     -moz-transition-duration: 0ms;
     transition-duration: 0ms;
 }
 
-.hint--bounce:before,
-.hint--bounce:after {
+.art-hint--bounce:before,
+.art-hint--bounce:after {
     -webkit-transition:
         opacity 0.3s ease,
         visibility 0.3s ease,
@@ -802,13 +801,12 @@
         transform 0.3s cubic-bezier(0.71, 1.7, 0.77, 1.24);
 }
 
-.hint--no-shadow:before,
-.hint--no-shadow:after {
+.art-hint--no-shadow:before,
+.art-hint--no-shadow:after {
     text-shadow: initial;
     box-shadow: initial;
 }
 
-.hint--no-arrow:before {
+.art-hint--no-arrow:before {
     display: none;
-}
 }

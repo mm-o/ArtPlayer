@@ -8,6 +8,8 @@ import time from './time';
 import volume from './volume';
 import setting from './setting';
 import screenshot from './screenshot';
+import action from './action';
+import playlist from './playlist';
 import airplay from './airplay';
 import {
     def,
@@ -129,12 +131,43 @@ export default class Control extends Component {
             });
         }
 
+        const actions = option.actions === true ? ['timestamp', 'loopSegment', 'mediaNotes'] : option.actions;
+        const actionOptions = {
+            timestamp: ['Timestamp', 10],
+            loopSegment: ['Loop Segment', 11],
+            mediaNotes: ['Media Notes', 12],
+        };
+
+        if (Array.isArray(actions) && !isMobile) {
+            actions.forEach((name) => {
+                if (!actionOptions[name]) return;
+                this.add(
+                    action({
+                        name,
+                        tooltip: actionOptions[name][0],
+                        position: 'right',
+                        index: actionOptions[name][1],
+                    }),
+                );
+            });
+        }
+
         if (option.screenshot && !isMobile) {
             this.add(
                 screenshot({
                     name: 'screenshot',
                     position: 'right',
                     index: 20,
+                }),
+            );
+        }
+
+        if (option.playlist && !isMobile) {
+            this.add(
+                playlist({
+                    name: 'playlist',
+                    position: 'right',
+                    index: 25,
                 }),
             );
         }

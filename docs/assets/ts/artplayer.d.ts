@@ -49,8 +49,11 @@ export type Utils = {
     secondToTime(second: number): string;
     escape(str: string): string;
     capitalize(str: string): string;
-    isStringOrNumber(val: any): boolean;
     getIcon(key: string, html: string | HTMLElement): HTMLElement;
+    supportsFlex(): boolean;
+    setStyleText(element: HTMLElement, text: string): void;
+    getRect(el: HTMLElement): { top: number; left: number; width: number; height: number };
+    loadImg(url: string, scale?: Number): Promise<HTMLImageElement>;
 };
 
 export type Template = {
@@ -74,6 +77,7 @@ export type Template = {
     readonly $mask: HTMLDivElement;
     readonly $state: HTMLDivElement;
     readonly $setting: HTMLDivElement;
+    readonly $playlist: HTMLDivElement;
     readonly $info: HTMLDivElement;
     readonly $infoPanel: HTMLDivElement;
     readonly $infoClose: HTMLDivElement;
@@ -124,13 +128,17 @@ type Props<T> = {
     html: string;
     icon: string;
     tooltip: string;
+    $item: HTMLDivElement;
     $icon: HTMLDivElement;
     $html: HTMLDivElement;
     $tooltip: HTMLDivElement;
-    $switch: boolean;
+    $switch: HTMLDivElement;
     $range: HTMLInputElement;
-    $parentItem: Setting;
-    $parentList: Setting[];
+    $parent: Setting;
+    $parents: Setting[];
+    $option: Setting[];
+    $events: Function[];
+    $formatted: boolean;
 } & Omit<T, 'html' | 'icon' | 'tooltip'>;
 
 export type SettingOption = Props<Setting>;
@@ -224,11 +232,28 @@ export type quality = {
 
 
 
+import {
+    ArtplayerMedia,
+    ArtplayerMediaAudioTrack,
+    ArtplayerMediaDanmakuItem,
+    ArtplayerMediaSubtitleTrack,
+    ArtplayerPlaylist,
+} from './media';
 
 export type AspectRatio = 'default' | '4:3' | '16:9' | (`${number}:${number}` & Record<never, never>);
 export type PlaybackRate = 0.5 | 0.75 | 1.0 | 1.25 | 1.5 | 1.75 | 2.0 | (number & Record<never, never>);
 export type Flip = 'normal' | 'horizontal' | 'vertical' | (string & Record<never, never>);
 export type State = 'standard' | 'mini' | 'pip' | 'fullscreen' | 'fullscreenWeb';
+export type ActionType = 'timestamp' | 'loopSegment' | 'screenshot' | 'mediaNotes' | (string & Record<never, never>);
+export type LoopSegment = { start: number; end: number };
+export type ActionDetail = {
+    type: ActionType;
+    currentTime: number;
+    duration: number;
+    media: ArtplayerMedia | null;
+    loopSegment: LoopSegment | null;
+    [key: string]: any;
+};
 
 export declare class Player {
     get aspectRatio(): AspectRatio;
@@ -285,7 +310,46 @@ export declare class Player {
     get subtitleOffset(): number;
     set subtitleOffset(time: number);
     set switch(url: string);
+    get quality(): quality[];
     set quality(quality: quality[]);
+    readonly qualities: quality[];
+    get thumbnails(): Thumbnails;
+    set thumbnails(thumbnails: Thumbnails);
+    readonly currentMedia: ArtplayerMedia | null;
+    readonly subtitleTracks: ArtplayerMediaSubtitleTrack[];
+    readonly danmaku: ArtplayerMediaDanmakuItem[] | Record<string, any>;
+    readonly audioTracks: ArtplayerMediaAudioTrack[];
+    readonly loopSegment: LoopSegment | null;
+    readonly playlist: ArtplayerPlaylist & { items: ArtplayerMedia[] };
+    readonly playlistIndex: number;
+    readonly currentPlaylistItem: ArtplayerMedia | null;
+    get playlistShow(): boolean;
+    set playlistShow(value: boolean);
+    getCurrentMedia(): ArtplayerMedia | null;
+    playMedia(media: ArtplayerMedia | string): Promise<ArtplayerMedia>;
+    updateQuality(quality?: quality[]): quality[];
+    setSubtitles(tracks?: ArtplayerMediaSubtitleTrack[]): Promise<ArtplayerMediaSubtitleTrack | null>;
+    selectSubtitle(
+        track?: ArtplayerMediaSubtitleTrack | null,
+        tracks?: ArtplayerMediaSubtitleTrack[],
+    ): Promise<ArtplayerMediaSubtitleTrack | null>;
+    setDanmaku(danmaku?: ArtplayerMediaDanmakuItem[] | Record<string, any>): ArtplayerMediaDanmakuItem[] | Record<string, any>;
+    setAudioTracks(tracks?: ArtplayerMediaAudioTrack[]): ArtplayerMediaAudioTrack[];
+    emitAction(type: ActionType, detail?: Record<string, any>): ActionDetail;
+    captureTimestamp(detail?: Record<string, any>): ActionDetail;
+    captureLoopSegment(): ActionDetail | { start: number; end: null };
+    setLoopSegment(start: number, end: number): boolean;
+    clearLoopSegment(): null;
+    setPlaylist(playlist?: ArtplayerPlaylist, currentUrl?: string): ArtplayerPlaylist & { items: ArtplayerMedia[] };
+    renderPlaylist(page?: 'playlist' | 'favorites' | 'history'): void;
+    playlistToggle(): boolean;
+    playlistPlay(id?: string): Promise<ArtplayerMedia | null>;
+    playlistNext(): Promise<ArtplayerMedia | null>;
+    playlistPrev(): Promise<ArtplayerMedia | null>;
+    playlistAdd(item: ArtplayerMedia, groupId?: string): ArtplayerMedia | null;
+    playlistRemove(id: string): ArtplayerMedia | null;
+    togglePlaylistFavorite(id: string): Promise<boolean>;
+    clearPlaylistHistory(): Promise<ArtplayerMedia[]>;
     pause(): void;
     play(): Promise<void>;
     toggle(): void;
@@ -295,7 +359,8 @@ export declare class Player {
     switchQuality(url: string): Promise<void>;
     getDataURL(): Promise<string>;
     getBlobUrl(): Promise<string>;
-    screenshot(): Promise<string>;
+    getScreenshotBlob(format?: 'png' | 'jpeg' | 'webp' | string, quality?: number): Promise<Blob | null>;
+    screenshot(format?: 'png' | 'jpeg' | 'webp' | string, quality?: number): Promise<Blob>;
     airplay(): void;
     autoSize(): void;
     autoHeight(): void;
@@ -310,7 +375,40 @@ export declare class Player {
 
 
 
-export type CustomType = 'flv' | 'm3u8' | 'hls' | 'ts' | 'mpd' | 'torrent' | (string & Record<never, never>);
+export type CustomType = 'flv' | 'm3u8' | 'hls' | 'ts' | 'mpd' | 'dash' | 'torrent' | (string & Record<never, never>);
+export type ActionType = 'timestamp' | 'loopSegment' | 'mediaNotes';
+
+export type Thumbnails = {
+    /**
+     * The thumbnail image url
+     */
+    url: string;
+
+    /**
+     * The thumbnail item number
+     */
+    number?: number;
+
+    /**
+     * The thumbnail column size
+     */
+    column?: number;
+
+    /**
+     * The thumbnail width
+     */
+    width?: number;
+
+    /**
+     * The thumbnail height
+     */
+    height?: number;
+
+    /**
+     * The thumbnail scale
+     */
+    scale?: number;
+};
 
 export type Option = {
     /**
@@ -404,6 +502,16 @@ export type Option = {
     screenshot?: boolean;
 
     /**
+     * Whether show native action buttons
+     */
+    actions?: boolean | ActionType[];
+
+    /**
+     * Whether show native playlist panel
+     */
+    playlist?: boolean;
+
+    /**
      * Whether show video setting button
      */
     setting?: boolean;
@@ -484,6 +592,11 @@ export type Option = {
     airplay?: boolean;
 
     /**
+     * Custom video proxy
+     */
+    proxy?: (this: Artplayer, art: Artplayer) => HTMLCanvasElement | HTMLVideoElement;
+
+    /**
      * Custom plugin list
      */
     plugins?: ((this: Artplayer, art: Artplayer) => unknown)[];
@@ -531,32 +644,7 @@ export type Option = {
     /**
      * Custom thumbnail
      */
-    thumbnails?: {
-        /**
-         * The thumbnail image url
-         */
-        url: string;
-
-        /**
-         * The thumbnail item number
-         */
-        number?: number;
-
-        /**
-         * The thumbnail column size
-         */
-        column?: number;
-
-        /**
-         * The thumbnail width
-         */
-        width?: number;
-
-        /**
-         * The thumbnail height
-         */
-        height?: number;
-    };
+    thumbnails?: Thumbnails;
 
     /**
      * Custom subtitle option
@@ -596,6 +684,124 @@ export type Option = {
 };
 
 export default Option;
+
+
+
+
+
+export type ArtplayerMediaSource = {
+    id?: string;
+    url: string | File | Blob | Record<string, any>;
+    type?: CustomType | 'auto' | 'video' | 'audio' | string;
+    label?: string;
+    default?: boolean;
+    isLive?: boolean;
+    codecs?: string;
+    mimeType?: string;
+    headers?: Record<string, string>;
+    meta?: Record<string, any>;
+    [key: string]: any;
+};
+
+export type ArtplayerMediaSubtitleTrack = Subtitle & {
+    id?: string;
+    lang?: string;
+    title?: string;
+    default?: boolean;
+    sourceUrl?: string;
+    [key: string]: any;
+};
+
+export type ArtplayerMediaDanmakuItem = {
+    time?: number;
+    text?: string;
+    mode?: number;
+    color?: string;
+    [key: string]: any;
+};
+
+export type ArtplayerMediaChapter = {
+    time: number;
+    text?: string;
+    title?: string;
+    [key: string]: any;
+};
+
+export type ArtplayerMediaAudioTrack = {
+    url: string;
+    language?: string;
+    label?: string;
+    default?: boolean;
+    isAI?: boolean;
+    [key: string]: any;
+};
+
+export type ArtplayerPlaylistNode = {
+    id?: string;
+    name?: string;
+    title?: string;
+    type?: 'folder' | 'media' | 'group' | string;
+    item?: ArtplayerMedia;
+    children?: ArtplayerPlaylistNode[];
+    expanded?: boolean;
+    loadChildren?: () => Promise<ArtplayerPlaylistNode[]>;
+    [key: string]: any;
+};
+
+export type ArtplayerPlaylist = {
+    id?: string;
+    title?: string;
+    name?: string;
+    items?: ArtplayerMedia[];
+    groups?: Array<{
+        id?: string;
+        name?: string;
+        expanded?: boolean;
+        items: ArtplayerMedia[];
+        [key: string]: any;
+    }>;
+    roots?: ArtplayerPlaylistNode[];
+    tree?: {
+        roots?: ArtplayerPlaylistNode[];
+        [key: string]: any;
+    };
+    favorites?: ArtplayerMedia[];
+    history?: ArtplayerMedia[];
+    onPlayItem?: (item: ArtplayerMedia, index: number, playlist: ArtplayerPlaylist) => unknown;
+    onToggleFavorite?: (item: ArtplayerMedia, favorite: boolean, playlist: ArtplayerPlaylist) => unknown;
+    onSaveProgress?: (item: ArtplayerMedia, currentTime: number, duration: number, playlist: ArtplayerPlaylist) => unknown;
+    onClearHistory?: (playlist: ArtplayerPlaylist) => unknown;
+    [key: string]: any;
+};
+
+export type ArtplayerMedia = {
+    id?: string;
+    title?: string;
+    name?: string;
+    url: string | File | Blob | Record<string, any>;
+    type?: CustomType | 'auto' | 'video' | 'audio' | string;
+    poster?: string;
+    thumbnail?: string;
+    cover?: string;
+    isLive?: boolean;
+    startTime?: number;
+    endTime?: number;
+    currentTime?: number;
+    sources?: ArtplayerMediaSource[];
+    qualities?: quality[];
+    quality?: quality[];
+    qualityLoader?: () => Promise<quality[]>;
+    subtitles?: ArtplayerMediaSubtitleTrack[];
+    danmaku?: ArtplayerMediaDanmakuItem[] | Record<string, any>;
+    chapters?: ArtplayerMediaChapter[] | string | null;
+    thumbnails?: Thumbnails | string;
+    annotations?: object | string;
+    watermarks?: object | string;
+    audioTracks?: ArtplayerMediaAudioTrack[];
+    playlist?: ArtplayerPlaylist;
+    meta?: Record<string, any>;
+    [key: string]: any;
+};
 
 export type Icons = {
     readonly loading: HTMLDivElement;
@@ -640,6 +846,7 @@ type I18nKeys =
     | 'id'
     | 'ru'
     | 'tr'
+    | 'ar'
     | (string & Record<never, never>);
 
 type I18nValue = {
@@ -685,6 +892,9 @@ export type I18n = Record<I18nKeys, Partial<I18nValue>>;
 
 
 
+
+export type Bar = 'loaded' | 'played' | 'hover';
+
 export type Events = {
     'video:canplay': [event: Event];
     'video:canplaythrough': [event: Event];
@@ -719,9 +929,10 @@ export type Events = {
     setting: [state: boolean];
     hotkey: [event: Event];
     destroy: [];
-    subtitleUpdate: [text: string];
-    subtitleLoad: [url: string];
-    subtitleSwitch: [url: string];
+    subtitleOffset: [offset: number];
+    subtitleBeforeUpdate: [cue: VTTCue];
+    subtitleAfterUpdate: [cue: VTTCue];
+    subtitleLoad: [cues: VTTCue[], option: Subtitle];
     focus: [event: Event];
     blur: [event: Event];
     dblclick: [event: Event];
@@ -746,9 +957,10 @@ export type Events = {
     play: [];
     screenshot: [dataUri: string];
     seek: [currentTime: number];
-    subtitleOffset: [offset: number];
     restart: [url: string];
     muted: [state: boolean];
+    setBar: [type: Bar, percentage: number, event?: Event];
+    keydown: [event: KeyboardEvent];
 };
 
 export type CssVar = {
@@ -1013,11 +1225,25 @@ export type ComponentOption = {
 
 
 
+
 export = Artplayer;
 export as namespace Artplayer;
 
 declare class Artplayer extends Player {
     constructor(option: Option, readyCallback?: (this: Artplayer, art: Artplayer) => unknown);
+
+    get Config(): Config;
+    get Events(): Events;
+    get Utils(): Utils;
+    get Player(): Player;
+    get Option(): Option;
+    get Subtitle(): Subtitle;
+    get Icons(): Icons;
+    get Template(): Template;
+    get I18n(): I18n;
+    get Setting(): Setting;
+    get SettingOption(): SettingOption;
+    get Component(): Component;
 
     static readonly instances: Artplayer[];
     static readonly version: string;
@@ -1030,8 +1256,10 @@ declare class Artplayer extends Player {
     static readonly validator: <T extends object>(option: T, scheme: object) => T;
     static readonly kindOf: (item: any) => string;
     static readonly html: Artplayer['template']['html'];
+    static readonly normalizeMedia: (media: ArtplayerMedia | string) => ArtplayerMedia;
     static readonly option: Option;
 
+    static STYLE: string;
     static DEBUG: boolean;
     static CONTEXTMENU: boolean;
     static NOTICE_TIME: number;
@@ -1079,6 +1307,7 @@ declare class Artplayer extends Player {
     hls: any;
     ts: any;
     mpd: any;
+    dash: any;
     torrent: any;
 
     on<T extends keyof Events>(name: T, fn: (...args: Events[T]) => unknown, ctx?: object): unknown;
@@ -1107,7 +1336,6 @@ declare class Artplayer extends Player {
             options?: boolean | AddEventListenerOptions,
         ): () => void;
         hover(element: HTMLElement, mouseenter?: (event: Event) => any, mouseleave?: (event: Event) => any): void;
-        loadImg(element: HTMLImageElement | string): Promise<HTMLImageElement>;
         remove(event: Event): void;
     };
 
@@ -1142,8 +1370,12 @@ declare class Artplayer extends Player {
     readonly subtitle: {
         get url(): string;
         set url(url: string);
+        get textTrack(): TextTrack;
+        get activeCues(): VTTCue[];
+        get cues(): VTTCue[];
         style(name: string | Partial<CSSStyleDeclaration>, value?: string): void;
         switch(url: string, option?: Subtitle): Promise<string>;
+        clear(): void;
     } & Component;
 
     readonly info: Component;
@@ -1152,8 +1384,8 @@ declare class Artplayer extends Player {
 
     readonly hotkey: {
         keys: Record<string, ((event: Event) => any)[]>;
-        add(key: number, callback: (this: Artplayer, event: Event) => any): Artplayer['hotkey'];
-        remove(key: number, callback: Function): Artplayer['hotkey'];
+        add(key: string, callback: (this: Artplayer, event: Event) => any): Artplayer['hotkey'];
+        remove(key: string, callback: Function): Artplayer['hotkey'];
     };
 
     readonly mask: Component;
@@ -1173,4 +1405,15 @@ declare class Artplayer extends Player {
         ): Promise<Artplayer['plugins']> | Artplayer['plugins'];
         [pluginName: string]: any;
     };
+}
+
+declare namespace Artplayer {
+    export type Media = ArtplayerMedia;
+    export type MediaSource = ArtplayerMediaSource;
+    export type MediaSubtitleTrack = ArtplayerMediaSubtitleTrack;
+    export type MediaDanmakuItem = ArtplayerMediaDanmakuItem;
+    export type MediaChapter = ArtplayerMediaChapter;
+    export type MediaAudioTrack = ArtplayerMediaAudioTrack;
+    export type Playlist = ArtplayerPlaylist;
+    export type PlaylistNode = ArtplayerPlaylistNode;
 }

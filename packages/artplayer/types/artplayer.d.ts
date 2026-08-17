@@ -9,6 +9,7 @@ import { Template } from './template';
 import { I18n } from './i18n';
 import { Setting, SettingOption } from './setting';
 import { Component } from './component';
+import { ArtplayerMedia, ArtplayerMediaAudioTrack, ArtplayerMediaChapter, ArtplayerMediaDanmakuItem, ArtplayerMediaSource, ArtplayerMediaSubtitleTrack, ArtplayerPlaylist, ArtplayerPlaylistNode } from './media';
 
 export = Artplayer;
 export as namespace Artplayer;
@@ -40,6 +41,7 @@ declare class Artplayer extends Player {
     static readonly validator: <T extends object>(option: T, scheme: object) => T;
     static readonly kindOf: (item: any) => string;
     static readonly html: Artplayer['template']['html'];
+    static readonly normalizeMedia: (media: ArtplayerMedia | string) => ArtplayerMedia;
     static readonly option: Option;
 
     static STYLE: string;
@@ -90,6 +92,7 @@ declare class Artplayer extends Player {
     hls: any;
     ts: any;
     mpd: any;
+    dash: any;
     torrent: any;
 
     on<T extends keyof Events>(name: T, fn: (...args: Events[T]) => unknown, ctx?: object): unknown;
@@ -157,6 +160,7 @@ declare class Artplayer extends Player {
         get cues(): VTTCue[];
         style(name: string | Partial<CSSStyleDeclaration>, value?: string): void;
         switch(url: string, option?: Subtitle): Promise<string>;
+        clear(): void;
     } & Component;
 
     readonly info: Component;
@@ -186,4 +190,15 @@ declare class Artplayer extends Player {
         ): Promise<Artplayer['plugins']> | Artplayer['plugins'];
         [pluginName: string]: any;
     };
+}
+
+declare namespace Artplayer {
+    export type Media = ArtplayerMedia;
+    export type MediaSource = ArtplayerMediaSource;
+    export type MediaSubtitleTrack = ArtplayerMediaSubtitleTrack;
+    export type MediaDanmakuItem = ArtplayerMediaDanmakuItem;
+    export type MediaChapter = ArtplayerMediaChapter;
+    export type MediaAudioTrack = ArtplayerMediaAudioTrack;
+    export type Playlist = ArtplayerPlaylist;
+    export type PlaylistNode = ArtplayerPlaylistNode;
 }

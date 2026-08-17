@@ -1,4 +1,11 @@
-import { getExt, def, sleep } from '../utils';
+import { getExt } from '../utils/file.js';
+import { def } from '../utils/property.js';
+import { sleep } from '../utils/time.js';
+import { destroyAdapter, getAdapter } from './adapters/index.js';
+
+function getTypeName(option, url) {
+    return option.type && option.type !== 'auto' ? option.type : getExt(url);
+}
 
 export default function urlMix(art) {
     const {
@@ -13,9 +20,10 @@ export default function urlMix(art) {
         async set(newUrl) {
             if (newUrl) {
                 const oldUrl = art.url;
-                const typeName = option.type || getExt(newUrl);
-                const typeCallback = option.customType[typeName];
+                const typeName = getTypeName(option, newUrl);
+                const typeCallback = option.customType[typeName] || getAdapter(typeName);
 
+                destroyAdapter(art);
                 if (typeName && typeCallback) {
                     await sleep();
                     art.loading.show = true;
@@ -25,7 +33,7 @@ export default function urlMix(art) {
                     $video.src = newUrl;
                 }
 
-                if (oldUrl !== art.url) {
+                if (oldUrl !== art.url || typeCallback) {
                     art.option.url = newUrl;
                     if (art.isReady && oldUrl) {
                         art.once('video:canplay', () => {
@@ -34,9 +42,12 @@ export default function urlMix(art) {
                     }
                 }
             } else {
+                destroyAdapter(art);
                 await sleep();
                 art.loading.show = true;
             }
         },
     });
+
+    art.once('destroy', () => destroyAdapter(art));
 }

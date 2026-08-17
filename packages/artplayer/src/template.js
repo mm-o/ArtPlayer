@@ -53,6 +53,7 @@ export default class Template {
               <div class="art-notice-inner"></div>
             </div>
             <div class="art-settings"></div>
+            <div class="art-playlist"></div>
             <div class="art-info">
               <div class="art-info-panel">
                 <div class="art-info-item">
@@ -119,6 +120,7 @@ export default class Template {
         this.$mask = this.query('.art-mask');
         this.$state = this.query('.art-state');
         this.$setting = this.query('.art-settings');
+        this.$playlist = this.query('.art-playlist');
         this.$info = this.query('.art-info');
         this.$infoPanel = this.query('.art-info-panel');
         this.$infoClose = this.query('.art-info-close');
