@@ -10,6 +10,7 @@
     "scripts": {
         "build:all": "npm run build all && npm run build:i18n && npm run build:sw && npm run build:ts && npm run build:docs",
         "lint": "npx eslint packages/*/src --fix",
+        "test:style-scope": "node ./scripts/check-style-scope.js",
         "build:sw": "node ./scripts/build-sw.js",
         "build:ts": "node ./scripts/build-ts.js",
         "build:docs": "node ./scripts/build-docs.js",
