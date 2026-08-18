@@ -188,16 +188,6 @@ export default function mediaMix(art) {
             art.url = toPlayableUrl(media.url);
             applyStartTime(art, media);
 
-            if (typeof media.qualityLoader === 'function' && typeof art.updateQuality === 'function') {
-                Promise.resolve(media.qualityLoader())
-                    .then((qualities) => {
-                        if (currentMedia === media) art.updateQuality(qualities || []);
-                    })
-                    .catch((err) => {
-                        if (typeof art.emit === 'function') art.emit('quality:error', err, media);
-                    });
-            }
-
             if (typeof art.play === 'function') {
                 await art.play();
             }
