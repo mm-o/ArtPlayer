@@ -2,6 +2,7 @@ import { def } from '../utils/property.js';
 
 export default function screenshotMix(art) {
     const {
+        i18n,
         notice,
         template: { $video },
     } = art;
@@ -71,7 +72,7 @@ export default function screenshotMix(art) {
             }
 
             await clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-            notice.show = 'Screenshot copied';
+            notice.show = i18n.get('Screenshot copied');
             art.emit('screenshot', blob);
             art.emitAction?.('screenshot', { blob });
 

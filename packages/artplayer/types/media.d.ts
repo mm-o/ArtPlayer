@@ -57,7 +57,7 @@ export type ArtplayerPlaylistNode = {
     item?: ArtplayerMedia;
     children?: ArtplayerPlaylistNode[];
     expanded?: boolean;
-    loadChildren?: () => Promise<ArtplayerPlaylistNode[]>;
+    loadChildren?: (node: ArtplayerPlaylistNode, playlist: ArtplayerPlaylist, art: any) => Promise<ArtplayerPlaylistNode[]>;
     [key: string]: any;
 };
 

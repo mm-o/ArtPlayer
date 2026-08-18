@@ -107,6 +107,28 @@ export default class Control extends Component {
             }),
         );
 
+        if (option.playlist && !isMobile) {
+            const playlistOption = typeof option.playlist === 'object' ? option.playlist : {};
+            const playlistControls = playlistOption.controls || ['playlistPrev', 'playlistNext', 'playlist'];
+            const playlistControlOptions = {
+                playlist: ['left', 5],
+                playlistPrev: ['left', 9],
+                playlistNext: ['left', 11],
+            };
+
+            playlistControls.forEach((name) => {
+                const control = playlistControlOptions[name];
+                if (!control) return;
+                this.add(
+                    playlist({
+                        name,
+                        position: control[0],
+                        index: control[1],
+                    }),
+                );
+            });
+        }
+
         this.add(
             volume({
                 name: 'volume',
@@ -158,16 +180,6 @@ export default class Control extends Component {
                     name: 'screenshot',
                     position: 'right',
                     index: 20,
-                }),
-            );
-        }
-
-        if (option.playlist && !isMobile) {
-            this.add(
-                playlist({
-                    name: 'playlist',
-                    position: 'right',
-                    index: 25,
                 }),
             );
         }

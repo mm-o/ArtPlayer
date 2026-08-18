@@ -53,7 +53,7 @@ export default {
     aspectRatio: b,
     screenshot: b,
     actions: `?${b}|${a}`,
-    playlist: b,
+    playlist: `${b}|${o}`,
     setting: b,
     hotkey: b,
     pip: b,

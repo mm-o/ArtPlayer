@@ -9,6 +9,10 @@ import Artplayer = require('./artplayer');
 
 export type CustomType = 'flv' | 'm3u8' | 'hls' | 'ts' | 'mpd' | 'dash' | 'torrent' | (string & Record<never, never>);
 export type ActionType = 'timestamp' | 'loopSegment' | 'mediaNotes';
+export type PlaylistControl = 'playlistPrev' | 'playlistNext' | 'playlist';
+export type PlaylistOption = {
+    controls?: PlaylistControl[];
+};
 
 export type Thumbnails = {
     /**
@@ -141,7 +145,7 @@ export type Option = {
     /**
      * Whether show native playlist panel
      */
-    playlist?: boolean;
+    playlist?: boolean | PlaylistOption;
 
     /**
      * Whether show video setting button

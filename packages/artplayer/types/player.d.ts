@@ -7,6 +7,7 @@ import {
     ArtplayerMediaDanmakuItem,
     ArtplayerMediaSubtitleTrack,
     ArtplayerPlaylist,
+    ArtplayerPlaylistNode,
 } from './media';
 
 export type AspectRatio = 'default' | '4:3' | '16:9' | (`${number}:${number}` & Record<never, never>);
@@ -116,7 +117,19 @@ export declare class Player {
     playlistNext(): Promise<ArtplayerMedia | null>;
     playlistPrev(): Promise<ArtplayerMedia | null>;
     playlistAdd(item: ArtplayerMedia, groupId?: string): ArtplayerMedia | null;
+    playlistAddCurrent(groupId?: string): ArtplayerMedia | null;
+    playlistAddUrl(url: string, title?: string): ArtplayerMedia | null;
+    playlistAddFile(file: File): ArtplayerMedia | null;
+    playlistUpdate(id: string, patch: Partial<ArtplayerMedia>): ArtplayerMedia | null;
     playlistRemove(id: string): ArtplayerMedia | null;
+    playlistGetItem(id: string): ArtplayerMedia | null;
+    playlistGetNode(id: string): ArtplayerPlaylistNode | null;
+    playlistExpandNode(id: string, expanded?: boolean): Promise<ArtplayerPlaylistNode | null>;
+    playlistToggleNode(id: string): Promise<ArtplayerPlaylistNode | null>;
+    playlistAddNode(node: ArtplayerPlaylistNode, parentId?: string): ArtplayerPlaylistNode | null;
+    playlistCreateFolder(name: string, parentId?: string): ArtplayerPlaylistNode | null;
+    playlistRemoveNode(id: string): ArtplayerPlaylistNode | null;
+    playlistUpdateNode(id: string, patch: Partial<ArtplayerPlaylistNode>): ArtplayerPlaylistNode | null;
     togglePlaylistFavorite(id: string): Promise<boolean>;
     clearPlaylistHistory(): Promise<ArtplayerMedia[]>;
     pause(): void;

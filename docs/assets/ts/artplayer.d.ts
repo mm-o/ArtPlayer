@@ -238,6 +238,7 @@ import {
     ArtplayerMediaDanmakuItem,
     ArtplayerMediaSubtitleTrack,
     ArtplayerPlaylist,
+    ArtplayerPlaylistNode,
 } from './media';
 
 export type AspectRatio = 'default' | '4:3' | '16:9' | (`${number}:${number}` & Record<never, never>);
@@ -347,7 +348,19 @@ export declare class Player {
     playlistNext(): Promise<ArtplayerMedia | null>;
     playlistPrev(): Promise<ArtplayerMedia | null>;
     playlistAdd(item: ArtplayerMedia, groupId?: string): ArtplayerMedia | null;
+    playlistAddCurrent(groupId?: string): ArtplayerMedia | null;
+    playlistAddUrl(url: string, title?: string): ArtplayerMedia | null;
+    playlistAddFile(file: File): ArtplayerMedia | null;
+    playlistUpdate(id: string, patch: Partial<ArtplayerMedia>): ArtplayerMedia | null;
     playlistRemove(id: string): ArtplayerMedia | null;
+    playlistGetItem(id: string): ArtplayerMedia | null;
+    playlistGetNode(id: string): ArtplayerPlaylistNode | null;
+    playlistExpandNode(id: string, expanded?: boolean): Promise<ArtplayerPlaylistNode | null>;
+    playlistToggleNode(id: string): Promise<ArtplayerPlaylistNode | null>;
+    playlistAddNode(node: ArtplayerPlaylistNode, parentId?: string): ArtplayerPlaylistNode | null;
+    playlistCreateFolder(name: string, parentId?: string): ArtplayerPlaylistNode | null;
+    playlistRemoveNode(id: string): ArtplayerPlaylistNode | null;
+    playlistUpdateNode(id: string, patch: Partial<ArtplayerPlaylistNode>): ArtplayerPlaylistNode | null;
     togglePlaylistFavorite(id: string): Promise<boolean>;
     clearPlaylistHistory(): Promise<ArtplayerMedia[]>;
     pause(): void;
@@ -377,6 +390,10 @@ export declare class Player {
 
 export type CustomType = 'flv' | 'm3u8' | 'hls' | 'ts' | 'mpd' | 'dash' | 'torrent' | (string & Record<never, never>);
 export type ActionType = 'timestamp' | 'loopSegment' | 'mediaNotes';
+export type PlaylistControl = 'playlistPrev' | 'playlistNext' | 'playlist';
+export type PlaylistOption = {
+    controls?: PlaylistControl[];
+};
 
 export type Thumbnails = {
     /**
@@ -509,7 +526,7 @@ export type Option = {
     /**
      * Whether show native playlist panel
      */
-    playlist?: boolean;
+    playlist?: boolean | PlaylistOption;
 
     /**
      * Whether show video setting button
@@ -744,7 +761,7 @@ export type ArtplayerPlaylistNode = {
     item?: ArtplayerMedia;
     children?: ArtplayerPlaylistNode[];
     expanded?: boolean;
-    loadChildren?: () => Promise<ArtplayerPlaylistNode[]>;
+    loadChildren?: (node: ArtplayerPlaylistNode, playlist: ArtplayerPlaylist, art: any) => Promise<ArtplayerPlaylistNode[]>;
     [key: string]: any;
 };
 
@@ -886,6 +903,24 @@ type I18nValue = {
     'Jump Play': string;
     AirPlay: string;
     'AirPlay Not Available': string;
+    Playlist: string;
+    Previous: string;
+    Next: string;
+    Favorites: string;
+    History: string;
+    Clear: string;
+    Empty: string;
+    Remove: string;
+    'New Folder': string;
+    'Add File': string;
+    'Add Link': string;
+    Add: string;
+    Name: string;
+    'Media Link': string;
+    Timestamp: string;
+    'Loop Segment': string;
+    'Media Notes': string;
+    'Screenshot copied': string;
 };
 
 export type I18n = Record<I18nKeys, Partial<I18nValue>>;

@@ -2,11 +2,11 @@ import { append } from '../utils';
 
 const icons = {
     timestamp:
-        '<svg viewBox="0 0 24 24" style="fill:none;stroke:var(--art-font-color);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path><path d="M16 19h6"></path><path d="M19 16v6"></path></svg>',
+        '<svg xmlns="http://www.w3.org/2000/svg" height="22" width="22" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.15;stroke-linecap:round;stroke-linejoin:round"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="9"></circle><path d="M19 16v6"></path><path d="M22 19h-6"></path></svg>',
     loopSegment:
-        '<svg viewBox="0 0 24 24" style="fill:none;stroke:var(--art-font-color);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14"></path><path d="m7 22-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path></svg>',
+        '<svg xmlns="http://www.w3.org/2000/svg" height="22" width="22" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.15;stroke-linecap:round;stroke-linejoin:round"><path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14"></path><path d="m7 22-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path></svg>',
     mediaNotes:
-        '<svg viewBox="0 0 24 24" style="fill:none;stroke:var(--art-font-color);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect x="4" y="4" width="16" height="18" rx="2"></rect><path d="M8 10h8"></path><path d="M8 14h5"></path><path d="m15 19 4-4 2 2-4 4h-2z"></path></svg>',
+        '<svg xmlns="http://www.w3.org/2000/svg" height="22" width="22" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.15;stroke-linecap:round;stroke-linejoin:round"><path d="M8 2v4"></path><path d="M16 2v4"></path><path d="M21 15V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"></path><path d="M3 10h18"></path><path d="M8 14h4"></path><path d="M8 18h2"></path><path d="m16 19 2 2 4-4"></path></svg>',
 };
 
 export default function action(option) {

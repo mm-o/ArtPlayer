@@ -2,25 +2,43 @@ function escapeText(value = '') {
     return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 }
 
+const icon = {
+    close: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>',
+    arrow: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="m9 18 6-6-6-6"></path></svg>',
+    favorite: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M11.5 2.3a.6.6 0 0 1 1 0l2.7 5.4 6 .9a.6.6 0 0 1 .3 1l-4.4 4.3 1 6a.6.6 0 0 1-.9.6L12 17.7l-5.3 2.8a.6.6 0 0 1-.8-.7l1-6-4.4-4.2a.6.6 0 0 1 .3-1l6-.9 2.7-5.4z"></path></svg>',
+    more: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>',
+    folder: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 10v6"></path><path d="M9 13h6"></path><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>',
+    file: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>',
+    link: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"></path><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"></path></svg>',
+    remove: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>',
+    check: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6 9 17l-5-5"></path></svg>',
+};
+
 function getItemText(item) {
     return escapeText(item?.title || item?.name || item?.url || 'Media');
 }
 
-function renderItem(item, current) {
+function renderItem(item, current, i18n) {
     const active = current && (current.id === item.id || current.url === item.url);
     const favorite = item._favorite ? ' is-favorite' : '';
+    const id = escapeText(item.id || item.url);
 
     return `
-        <div class="art-playlist-item${active ? ' is-active' : ''}${favorite}" data-id="${escapeText(item.id || item.url)}">
-            <button class="art-playlist-play" data-action="play" title="Play">${getItemText(item)}</button>
-            <button class="art-playlist-favorite" data-action="favorite" title="Favorite">★</button>
-            <button class="art-playlist-remove" data-action="remove" title="Remove">×</button>
+        <div class="art-playlist-item${active ? ' is-active' : ''}${favorite}" data-id="${id}">
+            <button class="art-playlist-play" data-action="play" title="Play">
+                <span class="art-playlist-text">${getItemText(item)}</span>
+            </button>
+            <button class="art-playlist-favorite" data-action="favorite" title="Favorite">${icon.favorite}</button>
+            <button class="art-playlist-more" data-action="toggle-menu" title="More">${icon.more}</button>
+            <div class="art-playlist-menu">
+                <button data-action="remove">${icon.remove}<span>${i18n.get('Remove')}</span></button>
+            </div>
         </div>
     `;
 }
 
-function renderGroup(group, current) {
-    const items = group.items.map((item) => renderItem(item, current)).join('');
+function renderGroup(group, current, i18n) {
+    const items = group.items.map((item) => renderItem(item, current, i18n)).join('');
     return `
         <section class="art-playlist-group${group.expanded ? ' is-expanded' : ''}">
             <div class="art-playlist-group-title">${escapeText(group.name)}</div>
@@ -29,28 +47,35 @@ function renderGroup(group, current) {
     `;
 }
 
-function renderNode(node, current, level = 0) {
+function renderNode(node, current, i18n, level = 0) {
     const item = node.item || (node.url ? node : null);
-    const children = (node.children || []).map((child) => renderNode(child, current, level + 1)).join('');
-    const content = item ? renderItem(item, current) : `<div class="art-playlist-node-title">${escapeText(node.name)}</div>`;
+    const hasChildren = !!node.children?.length || typeof node.loadChildren === 'function';
+    const isMedia = item && !hasChildren && node.type === 'media';
+    const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, level + 1)).join('');
+    const content = isMedia
+        ? renderItem(item, current, i18n)
+        : `<button class="art-playlist-node-title" data-action="toggle-node">
+              <span class="art-playlist-text">${escapeText(node.name)}</span>
+              <span class="art-playlist-node-arrow">${hasChildren ? icon.arrow : ''}</span>
+           </button>`;
 
     return `
-        <div class="art-playlist-node" style="--art-playlist-level:${level}">
+        <div class="art-playlist-node${node.expanded === false ? '' : ' is-expanded'}" data-id="${escapeText(node.id)}" style="--art-playlist-level:${level}">
             ${content}
             ${children ? `<div class="art-playlist-node-children">${children}</div>` : ''}
         </div>
     `;
 }
 
-function renderCollection(name, items, current, clearable = false) {
+function renderCollection(name, items, current, i18n, clearable = false) {
     return `
         <section class="art-playlist-group is-expanded">
             <div class="art-playlist-group-title">
                 <span>${name}</span>
-                ${clearable ? '<button data-action="clear-history">Clear</button>' : ''}
+                ${clearable ? `<button data-action="clear-history">${i18n.get('Clear')}</button>` : ''}
             </div>
             <div class="art-playlist-group-items">
-                ${items.length ? items.map((item) => renderItem(item, current)).join('') : '<div class="art-playlist-empty">Empty</div>'}
+                ${items.length ? items.map((item) => renderItem(item, current, i18n)).join('') : `<div class="art-playlist-empty">${i18n.get('Empty')}</div>`}
             </div>
         </section>
     `;
@@ -58,32 +83,48 @@ function renderCollection(name, items, current, clearable = false) {
 
 export function renderPlaylist(art, page = 'playlist') {
     const { playlist, currentPlaylistItem, template } = art;
+    const i18n = art.i18n;
     const favorites = new Set(playlist.favorites.map((item) => item.id || item.url));
     const markFavorite = (item) => ({ ...item, _favorite: favorites.has(item.id || item.url) });
+    const markNodeFavorite = (node) => ({
+        ...node,
+        item: node.item ? markFavorite(node.item) : node.item,
+        children: (node.children || []).map(markNodeFavorite),
+    });
     const markedGroups = playlist.groups.map((group) => ({ ...group, items: group.items.map(markFavorite) }));
-    const markedRoots = playlist.roots.map((node) => node);
+    const markedRoots = playlist.roots.map(markNodeFavorite);
     const markedFavorites = playlist.favorites.map((item) => ({ ...item, _favorite: true }));
     const markedHistory = playlist.history.map(markFavorite);
     const body =
         page === 'favorites'
-            ? renderCollection('Favorites', markedFavorites, currentPlaylistItem)
+            ? renderCollection(i18n.get('Favorites'), markedFavorites, currentPlaylistItem, i18n)
             : page === 'history'
-              ? renderCollection('History', markedHistory, currentPlaylistItem, true)
-              : `${markedGroups.map((group) => renderGroup(group, currentPlaylistItem)).join('')}
-                 ${markedRoots.map((node) => renderNode(node, currentPlaylistItem)).join('')}`;
+              ? renderCollection(i18n.get('History'), markedHistory, currentPlaylistItem, i18n, true)
+              : `${markedGroups.map((group) => renderGroup(group, currentPlaylistItem, i18n)).join('')}
+                 ${markedRoots.map((node) => renderNode(node, currentPlaylistItem, i18n)).join('')}`;
 
     template.$playlist.innerHTML = `
         <div class="art-playlist-panel">
             <div class="art-playlist-header">
-                <strong>${escapeText(playlist.title)}</strong>
-                <button data-action="close">×</button>
+                <strong>${i18n.get('Playlist')}</strong>
+                <div class="art-playlist-tools">
+                    <button data-action="show-add-folder" title="${i18n.get('New Folder')}">${icon.folder}</button>
+                    <button data-action="add-file" title="${i18n.get('Add File')}">${icon.file}</button>
+                    <button data-action="show-add-url" title="${i18n.get('Add Link')}">${icon.link}</button>
+                    <button data-action="close" title="${i18n.get('Close')}">${icon.close}</button>
+                </div>
+            </div>
+            <div class="art-playlist-form">
+                <input data-field="name" type="text" placeholder="${i18n.get('Name')}">
+                <input data-field="url" type="text" placeholder="${i18n.get('Media Link')}">
+                <button data-action="submit-add" title="${i18n.get('Add')}">${icon.check}</button>
             </div>
             <div class="art-playlist-tabs">
-                <button data-page="playlist" class="${page === 'playlist' ? 'is-active' : ''}">Playlist</button>
-                <button data-page="favorites" class="${page === 'favorites' ? 'is-active' : ''}">Favorites</button>
-                <button data-page="history" class="${page === 'history' ? 'is-active' : ''}">History</button>
+                <button data-page="playlist" class="${page === 'playlist' ? 'is-active' : ''}">${i18n.get('Playlist')}</button>
+                <button data-page="favorites" class="${page === 'favorites' ? 'is-active' : ''}">${i18n.get('Favorites')}</button>
+                <button data-page="history" class="${page === 'history' ? 'is-active' : ''}">${i18n.get('History')}</button>
             </div>
-            <div class="art-playlist-body">${body || '<div class="art-playlist-empty">Empty</div>'}</div>
+            <div class="art-playlist-body">${body || `<div class="art-playlist-empty">${i18n.get('Empty')}</div>`}</div>
         </div>
     `;
 }
