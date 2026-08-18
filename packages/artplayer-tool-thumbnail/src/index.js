@@ -175,7 +175,7 @@ export default class ArtplayerToolThumbnail extends Emitter {
         context2D.font = '14px Georgia';
         context2D.fillStyle = '#fff';
         context2D.fillText(
-            `From: https://artplayer.org/, Number: ${number}, Width: ${width}, Height: ${height}, Column: ${column}`,
+            `From: https://github.com/mm-o/ArtPlayer, Number: ${number}, Width: ${width}, Height: ${height}, Column: ${column}`,
             10,
             canvas.height - 11,
         );

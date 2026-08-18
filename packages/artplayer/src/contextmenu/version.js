@@ -1,6 +1,6 @@
 export default function version(option) {
     return {
         ...option,
-        html: `<a href="https://artplayer.org" target="_blank">ArtPlayer ${process.env.APP_VER}</a>`,
+        html: `<a href="https://github.com/mm-o/ArtPlayer" target="_blank">SiYuan ArtPlayer ${process.env.APP_VER}</a>`,
     };
 }

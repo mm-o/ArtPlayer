@@ -263,7 +263,7 @@ if (utils.isBrowser) {
     setTimeout(() => {
         if (Artplayer.LOG_VERSION) {
             console.log(
-                `%c ArtPlayer %c ${Artplayer.version} %c https://artplayer.org`,
+                `%c SiYuan ArtPlayer %c ${Artplayer.version} %c https://github.com/mm-o/ArtPlayer`,
                 'color: #fff; background: #5f5f5f',
                 'color: #fff; background: #4bc729',
                 '',
