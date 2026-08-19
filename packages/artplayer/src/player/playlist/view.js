@@ -80,6 +80,7 @@ function renderCollection(name, items, current, i18n, clearable = false) {
 export function renderPlaylist(art, page = 'playlist') {
     const { playlist, currentPlaylistItem, template } = art;
     const i18n = art.i18n;
+    const scrollTop = template.$playlist.querySelector('.art-playlist-body')?.scrollTop || 0;
     const favorites = new Set(playlist.favorites.map((item) => item.id || item.url));
     const markFavorite = (item) => ({ ...item, _favorite: favorites.has(item.id || item.url) });
     const markNodeFavorite = (node) => ({
@@ -115,4 +116,6 @@ export function renderPlaylist(art, page = 'playlist') {
             <div class="art-playlist-body">${body || `<div class="art-playlist-empty">${i18n.get('Empty')}</div>`}</div>
         </div>
     `;
+    const nextBody = template.$playlist.querySelector('.art-playlist-body');
+    if (nextBody) nextBody.scrollTop = scrollTop;
 }
