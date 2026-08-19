@@ -24,6 +24,10 @@ export default function attrInit(art) {
         art.volume = volumeStorage;
     }
 
+    if (option.defaultPlaybackRate) {
+        art.playbackRate = option.defaultPlaybackRate;
+    }
+
     if (option.poster) {
         setStyle($poster, 'backgroundImage', `url(${option.poster})`);
     }

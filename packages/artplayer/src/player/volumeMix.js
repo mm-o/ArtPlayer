@@ -42,6 +42,7 @@ export default function volumeMix(art) {
             $video.volume = clamp(volume, 0, 1);
             boost(volume);
             notice.show = `${i18n.get('Volume')}: ${parseInt(volume * 100, 10)}`;
+            art.emit('volume', volume);
             if (volume !== 0) {
                 storage.set('volume', volume);
             }

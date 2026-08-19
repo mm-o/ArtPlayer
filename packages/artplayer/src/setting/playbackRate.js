@@ -8,7 +8,7 @@ export default function playbackRate(art) {
     const playbackRates = option.playbackRates.length ? option.playbackRates : PLAYBACK_RATE;
 
     function getI18n(value) {
-        return value === 1.0 ? i18n.get('Normal') : value.toFixed(1);
+        return value === 1.0 ? i18n.get('Normal') : String(Number(value.toFixed(2)));
     }
 
     function update() {

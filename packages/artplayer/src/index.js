@@ -145,6 +145,7 @@ export default class Artplayer extends Emitter {
             flip: false,
             playbackRate: false,
             playbackRates: [],
+            defaultPlaybackRate: 1,
             aspectRatio: false,
             screenshot: false,
             actions: false,

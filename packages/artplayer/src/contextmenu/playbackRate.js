@@ -9,9 +9,12 @@ export default function playbackRate(option) {
         } = art;
         const rates = playbackRates.length ? playbackRates : PLAYBACK_RATE;
 
-        const html = rates.map(
-            (item) => `<span data-value="${item}">${item === 1 ? i18n.get('Normal') : item.toFixed(1)}</span>`,
-        ).join('');
+        const html = rates
+            .map((item) => {
+                const text = item === 1 ? i18n.get('Normal') : String(Number(item.toFixed(2)));
+                return `<span data-value="${item}">${text}</span>`;
+            })
+            .join('');
 
         return {
             ...option,

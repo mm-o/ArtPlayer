@@ -44,6 +44,7 @@ export default function volume(option) {
 
             update();
             art.on('video:volumechange', update);
+            art.on('volume', update);
 
             proxy($volume, 'click', () => {
                 art.muted = true;

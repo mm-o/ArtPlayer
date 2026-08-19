@@ -52,6 +52,7 @@ export default {
     flip: b,
     playbackRate: b,
     playbackRates: [n],
+    defaultPlaybackRate: n,
     aspectRatio: b,
     screenshot: b,
     actions: `?${b}|${a}`,
