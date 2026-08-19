@@ -46,31 +46,6 @@ function toolbarControls(art) {
     };
 }
 
-function volumeSetting(art) {
-    const { i18n, icons, option, constructor } = art;
-    const max = Math.max(1, Number(option.volumeMax) || 1);
-    const getTooltip = () => `${parseInt(art.volume * 100, 10)}`;
-
-    return {
-        width: constructor.SETTING_ITEM_WIDTH,
-        name: 'volume',
-        html: i18n.get('Volume'),
-        tooltip: getTooltip(),
-        icon: icons.volume,
-        range: [art.volume, 0, max, 0.01],
-        onChange(item) {
-            art.volume = item.range[0];
-            return getTooltip();
-        },
-        mounted: (_, item) => {
-            art.on('volume', () => {
-                item.range = [art.volume, 0, max, 0.01];
-                item.tooltip = getTooltip();
-            });
-        },
-    };
-}
-
 export default class Setting extends Component {
     constructor(art) {
         super(art);
@@ -116,8 +91,6 @@ export default class Setting extends Component {
     get builtin() {
         const result = [];
         const { option } = this.art;
-
-        result.push(volumeSetting(this.art));
 
         if (option.playbackRate) {
             result.push(playbackRate(this.art));
