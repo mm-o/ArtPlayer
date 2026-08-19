@@ -16,9 +16,13 @@ export default function volume(option) {
             const $loaded = append($handle, `<div class="art-volume-loaded"></div>`);
             const $indicator = append($slider, `<div class="art-volume-indicator"></div>`);
 
+            function getMax() {
+                return Math.max(1, Number(art.option.volumeMax) || 1);
+            }
+
             function getVolumeFromEvent(event) {
                 const { top, height } = getRect($slider);
-                return 1 - (event.clientY - top) / height;
+                return (1 - (event.clientY - top) / height) * getMax();
             }
 
             function update() {
@@ -29,12 +33,12 @@ export default function volume(option) {
                     setStyle($loaded, 'top', '100%');
                     $value.innerText = 0;
                 } else {
-                    const percentage = art.volume * 100;
+                    const percentage = (art.volume / getMax()) * 100;
                     setStyle($volume, 'display', 'flex');
                     setStyle($close, 'display', 'none');
                     setStyle($indicator, 'top', `${100 - percentage}%`);
                     setStyle($loaded, 'top', `${100 - percentage}%`);
-                    $value.innerText = Math.floor(percentage);
+                    $value.innerText = Math.floor(art.volume * 100);
                 }
             }
 

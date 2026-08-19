@@ -1,4 +1,4 @@
-import { clamp, setStyle } from '../utils';
+import { setStyle } from '../utils';
 
 export default function attrInit(art) {
     const {
@@ -16,12 +16,12 @@ export default function attrInit(art) {
     }
 
     if (option.volume) {
-        $video.volume = clamp(option.volume, 0, 1);
+        art.volume = option.volume;
     }
 
     const volumeStorage = storage.get('volume');
     if (typeof volumeStorage === 'number') {
-        $video.volume = clamp(volumeStorage, 0, 1);
+        art.volume = volumeStorage;
     }
 
     if (option.poster) {

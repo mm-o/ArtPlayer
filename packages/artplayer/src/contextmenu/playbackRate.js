@@ -4,10 +4,12 @@ export default function playbackRate(option) {
     return (art) => {
         const {
             i18n,
+            option: { playbackRates },
             constructor: { PLAYBACK_RATE },
         } = art;
+        const rates = playbackRates.length ? playbackRates : PLAYBACK_RATE;
 
-        const html = PLAYBACK_RATE.map(
+        const html = rates.map(
             (item) => `<span data-value="${item}">${item === 1 ? i18n.get('Normal') : item.toFixed(1)}</span>`,
         ).join('');
 

@@ -6,15 +6,44 @@ export default function volumeMix(art) {
         i18n,
         notice,
         storage,
+        option,
     } = art;
+    let audioCtx;
+    let gainNode;
+    let audioSource;
+    let volume = 0;
+
+    function getMax() {
+        return Math.max(1, Number(option.volumeMax) || 1);
+    }
+
+    function boost(gain) {
+        if (gain <= 1) {
+            if (gainNode) gainNode.gain.value = 1;
+            return;
+        }
+        try {
+            audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+            audioSource ||= audioCtx.createMediaElementSource($video);
+            gainNode ||= audioCtx.createGain();
+            audioSource.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            gainNode.gain.value = gain;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        } catch (error) {
+            if (gainNode) gainNode.gain.value = 1;
+        }
+    }
 
     def(art, 'volume', {
-        get: () => $video.volume || 0,
+        get: () => volume || $video.volume || 0,
         set: (percentage) => {
-            $video.volume = clamp(percentage, 0, 1);
-            notice.show = `${i18n.get('Volume')}: ${parseInt($video.volume * 100, 10)}`;
-            if ($video.volume !== 0) {
-                storage.set('volume', $video.volume);
+            volume = clamp(Number(percentage) || 0, 0, getMax());
+            $video.volume = clamp(volume, 0, 1);
+            boost(volume);
+            notice.show = `${i18n.get('Volume')}: ${parseInt(volume * 100, 10)}`;
+            if (volume !== 0) {
+                storage.set('volume', volume);
             }
         },
     });

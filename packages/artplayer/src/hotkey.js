@@ -28,7 +28,7 @@ export default class Hotkey {
         });
 
         this.add('ArrowUp', () => {
-            this.art.volume += constructor.VOLUME_STEP;
+            this.art.volume += constructor.VOLUME_STEP * Math.max(1, Number(this.art.option.volumeMax) || 1);
         });
 
         this.add('ArrowRight', () => {
@@ -36,7 +36,7 @@ export default class Hotkey {
         });
 
         this.add('ArrowDown', () => {
-            this.art.volume -= constructor.VOLUME_STEP;
+            this.art.volume -= constructor.VOLUME_STEP * Math.max(1, Number(this.art.option.volumeMax) || 1);
         });
 
         proxy(document, 'keydown', (event) => {
