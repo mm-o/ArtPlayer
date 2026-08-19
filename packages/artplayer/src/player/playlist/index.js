@@ -63,6 +63,10 @@ function getName(value, fallback) {
     return String(value || '').trim() || fallback;
 }
 
+async function applyHook(playlist, name, ...args) {
+    return typeof playlist[name] === 'function' ? playlist[name](...args, playlist) : undefined;
+}
+
 function updateItems(playlist) {
     const groupItems = playlist.groups.flatMap((group) => group.items);
     const treeItems = collectNodeItems(playlist.roots);
@@ -221,10 +225,12 @@ export default function playlistMix(art) {
     });
 
     def(art, 'playlistAddUrl', {
-        value(url, title) {
+        async value(url, title) {
             const nextUrl = String(url || '').trim();
             if (!nextUrl) return null;
-            return art.playlistAdd({
+            const hooked = await applyHook(playlist, 'onAddUrl', nextUrl, title);
+            if (hooked === false) return null;
+            return art.playlistAdd(hooked || {
                 id: nextUrl,
                 title: getName(title, nextUrl),
                 url: nextUrl,
@@ -234,9 +240,11 @@ export default function playlistMix(art) {
     });
 
     def(art, 'playlistAddFile', {
-        value(file) {
+        async value(file) {
             if (!file) return null;
-            return art.playlistAdd({
+            const hooked = await applyHook(playlist, 'onAddFile', file);
+            if (hooked === false) return null;
+            return art.playlistAdd(hooked || {
                 id: `${file.name}-${file.size}-${file.lastModified}`,
                 title: file.name,
                 url: file,
@@ -274,10 +282,12 @@ export default function playlistMix(art) {
     });
 
     def(art, 'playlistRemove', {
-        value(id) {
+        async value(id) {
             const item = findAnyItem(playlist, id);
             if (!item) return null;
 
+            const hooked = await applyHook(playlist, 'onRemoveItem', item);
+            if (hooked === false) return null;
             playlist.items = playlist.items.filter((item) => !isSameItem(item, id));
             playlist._items = (playlist._items || []).filter((item) => !isSameItem(item, id));
             playlist.favorites = playlist.favorites.filter((item) => !isSameItem(item, id));
@@ -348,9 +358,12 @@ export default function playlistMix(art) {
     });
 
     def(art, 'playlistCreateFolder', {
-        value(name, parentId) {
+        async value(name, parentId) {
             const title = getName(name, 'New Folder');
+            const hooked = await applyHook(playlist, 'onCreateFolder', title, parentId);
+            if (hooked === false) return null;
             return art.playlistAddNode(
+                hooked ||
                 {
                     id: `folder-${Date.now()}`,
                     name: title,
@@ -472,7 +485,7 @@ export default function playlistMix(art) {
                     await art.togglePlaylistFavorite(id);
                     break;
                 case 'remove':
-                    art.playlistRemove(id);
+                    await art.playlistRemove(id);
                     break;
                 case 'toggle-menu':
                     if (item) item.classList.toggle('is-menu-open');
@@ -487,8 +500,8 @@ export default function playlistMix(art) {
                     const type = form?.dataset?.type;
                     const name = nameInput?.value || '';
                     const url = urlInput?.value || '';
-                    if (type === 'folder' && name.trim()) art.playlistCreateFolder(name);
-                    if (type === 'url' && url.trim()) art.playlistAddUrl(url, name);
+                    if (type === 'folder' && name.trim()) await art.playlistCreateFolder(name);
+                    if (type === 'url' && url.trim()) await art.playlistAddUrl(url, name);
                     hideForm();
                     break;
                 }
@@ -500,8 +513,8 @@ export default function playlistMix(art) {
                         fileInput.accept = 'audio/*,video/*';
                         fileInput.style.display = 'none';
                         art.template.$player.appendChild(fileInput);
-                        art.events.proxy(fileInput, 'change', () => {
-                            Array.from(fileInput.files || []).forEach((file) => art.playlistAddFile(file));
+                        art.events.proxy(fileInput, 'change', async () => {
+                            await Promise.all(Array.from(fileInput.files || []).map((file) => art.playlistAddFile(file)));
                             fileInput.value = '';
                         });
                     }
