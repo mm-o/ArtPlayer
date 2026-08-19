@@ -14,6 +14,8 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            max-height: calc(100vh - var(--art-padding) * 4);
+            overflow: auto;
 
             .art-info-item {
                 display: flex;
@@ -30,6 +32,12 @@
                     .art-truncate();
                     user-select: all;
                 }
+            }
+
+            .art-info-media {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
             }
         }
 

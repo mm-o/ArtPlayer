@@ -40,6 +40,11 @@ export default class Template {
             <div class="art-mask">
               <div class="art-state"></div>
             </div>
+            <div class="art-topbar">
+              <div class="art-topbar-left"></div>
+              <div class="art-topbar-title"></div>
+              <div class="art-topbar-right"></div>
+            </div>
             <div class="art-bottom">
               <div class="art-progress"></div>
               <div class="art-controls">
@@ -82,6 +87,7 @@ export default class Template {
                     <span data-video="videoWidth"></span> x <span data-video="videoHeight"></span>
                   </div>
                 </div>
+                <div class="art-info-media"></div>
               </div>
               <div class="art-info-close">[x]</div>
             </div>
@@ -107,6 +113,10 @@ export default class Template {
         this.$poster = this.query('.art-poster');
         this.$subtitle = this.query('.art-subtitle');
         this.$danmuku = this.query('.art-danmuku');
+        this.$topbar = this.query('.art-topbar');
+        this.$topbarLeft = this.query('.art-topbar-left');
+        this.$topbarTitle = this.query('.art-topbar-title');
+        this.$topbarRight = this.query('.art-topbar-right');
         this.$bottom = this.query('.art-bottom');
         this.$progress = this.query('.art-progress');
         this.$controls = this.query('.art-controls');
@@ -123,6 +133,7 @@ export default class Template {
         this.$playlist = this.query('.art-playlist');
         this.$info = this.query('.art-info');
         this.$infoPanel = this.query('.art-info-panel');
+        this.$infoMedia = this.query('.art-info-media');
         this.$infoClose = this.query('.art-info-close');
         this.$contextmenu = this.query('.art-contextmenus');
 

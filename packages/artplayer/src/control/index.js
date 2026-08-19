@@ -33,7 +33,7 @@ export default class Control extends Component {
         this.timer = Date.now();
 
         const { constructor } = art;
-        const { $player, $bottom } = this.art.template;
+        const { $player, $bottom, $topbar } = this.art.template;
 
         art.on('mousemove', () => {
             if (!isMobile) {
@@ -50,7 +50,7 @@ export default class Control extends Component {
         });
 
         art.on('document:mousemove', (event) => {
-            this.isHover = includeFromEvent(event, $bottom);
+            this.isHover = includeFromEvent(event, $bottom) || includeFromEvent(event, $topbar);
         });
 
         art.on('video:timeupdate', () => {
@@ -83,6 +83,8 @@ export default class Control extends Component {
     init() {
         const { option } = this.art;
 
+        this.initTopbarTitle();
+
         if (!option.isLive) {
             this.add(
                 progress({
@@ -111,7 +113,7 @@ export default class Control extends Component {
             const playlistOption = typeof option.playlist === 'object' ? option.playlist : {};
             const playlistControls = playlistOption.controls || ['playlistPrev', 'playlistNext', 'playlist'];
             const playlistControlOptions = {
-                playlist: ['left', 5],
+                playlist: ['top-left', 5],
                 playlistPrev: ['left', 9],
                 playlistNext: ['left', 11],
             };
@@ -167,7 +169,7 @@ export default class Control extends Component {
                     action({
                         name,
                         tooltip: actionOptions[name][0],
-                        position: 'right',
+                        position: 'top-right',
                         index: actionOptions[name][1],
                     }),
                 );
@@ -178,7 +180,7 @@ export default class Control extends Component {
             this.add(
                 screenshot({
                     name: 'screenshot',
-                    position: 'right',
+                    position: 'top-right',
                     index: 20,
                 }),
             );
@@ -241,11 +243,17 @@ export default class Control extends Component {
 
     add(getOption) {
         const option = typeof getOption === 'function' ? getOption(this.art) : getOption;
-        const { $progress, $controlsLeft, $controlsRight } = this.art.template;
+        const { $progress, $controlsLeft, $controlsRight, $topbarLeft, $topbarRight } = this.art.template;
 
         switch (option.position) {
             case 'top':
                 this.$parent = $progress;
+                break;
+            case 'top-left':
+                this.$parent = $topbarLeft;
+                break;
+            case 'top-right':
+                this.$parent = $topbarRight;
                 break;
             case 'left':
                 this.$parent = $controlsLeft;
@@ -254,11 +262,25 @@ export default class Control extends Component {
                 this.$parent = $controlsRight;
                 break;
             default:
-                errorHandle(false, `Control option.position must one of 'top', 'left', 'right'`);
+                errorHandle(false, `Control option.position must one of 'top', 'top-left', 'top-right', 'left', 'right'`);
                 break;
         }
 
         super.add(option);
+    }
+
+    initTopbarTitle() {
+        const {
+            template: { $topbarTitle },
+        } = this.art;
+
+        const update = (media = this.art.currentMedia) => {
+            $topbarTitle.innerText = media?.title || media?.name || '';
+        };
+
+        this.art.on('media:change', update);
+        this.art.on('playlist:item', update);
+        update();
     }
 
     check(target) {

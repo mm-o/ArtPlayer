@@ -1,4 +1,23 @@
 .art-video-player {
+    .art-topbar {
+        .art-full(60);
+        bottom: auto;
+        height: var(--art-control-height);
+        opacity: 0;
+        overflow: hidden;
+        pointer-events: none;
+        padding: 0 var(--art-padding);
+        transform: translateY(calc(0px - var(--art-bottom-offset)));
+        transition: all var(--art-transition-duration) ease;
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent);
+
+        .art-topbar-left,
+        .art-topbar-title,
+        .art-topbar-right {
+            pointer-events: auto;
+        }
+    }
+
     .art-bottom {
         .art-full(60);
         display: flex;
@@ -21,6 +40,11 @@
 
     &.art-control-show,
     &.art-hover {
+        .art-topbar {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         .art-bottom {
             opacity: 1;
             .art-controls,

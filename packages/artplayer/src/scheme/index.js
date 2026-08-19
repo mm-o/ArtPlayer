@@ -79,7 +79,7 @@ export default {
         {
             ...ComponentOption,
             position: (value, _, paths) => {
-                const position = ['top', 'left', 'right'];
+                const position = ['top', 'top-left', 'top-right', 'left', 'right'];
                 return errorHandle(
                     position.includes(value),
                     `${paths.join('.')} only accept ${position.toString()} as parameters`,

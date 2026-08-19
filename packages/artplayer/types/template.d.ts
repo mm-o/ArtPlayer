@@ -7,6 +7,10 @@ export type Template = {
     readonly $poster: HTMLDivElement;
     readonly $subtitle: HTMLDivElement;
     readonly $danmuku: HTMLDivElement;
+    readonly $topbar: HTMLDivElement;
+    readonly $topbarLeft: HTMLDivElement;
+    readonly $topbarTitle: HTMLDivElement;
+    readonly $topbarRight: HTMLDivElement;
     readonly $bottom: HTMLDivElement;
     readonly $progress: HTMLDivElement;
     readonly $controls: HTMLDivElement;
@@ -22,6 +26,7 @@ export type Template = {
     readonly $playlist: HTMLDivElement;
     readonly $info: HTMLDivElement;
     readonly $infoPanel: HTMLDivElement;
+    readonly $infoMedia: HTMLDivElement;
     readonly $infoClose: HTMLDivElement;
     readonly $contextmenu: HTMLDivElement;
     readonly $mini: HTMLDivElement;

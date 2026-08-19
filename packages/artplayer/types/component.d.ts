@@ -108,7 +108,7 @@ export type ComponentOption = {
     /**
      * Component position, use in controls
      */
-    position?: 'top' | 'left' | 'right' | (string & Record<never, never>);
+    position?: 'top' | 'top-left' | 'top-right' | 'left' | 'right' | (string & Record<never, never>);
 
     /**
      * Custom selector list, use in controls

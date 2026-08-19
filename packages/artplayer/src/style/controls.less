@@ -1,3 +1,4 @@
+.art-topbar,
 .art-controls {
     position: relative;
     z-index: 10;
@@ -7,6 +8,8 @@
     justify-content: space-between;
     height: var(--art-control-height);
 
+    .art-topbar-left,
+    .art-topbar-right,
     .art-controls-left,
     .art-controls-right {
         display: flex;
@@ -20,6 +23,18 @@
         padding: 0 10px;
     }
 
+    .art-topbar-title {
+        .art-center();
+        flex: 1;
+        height: 100%;
+        padding: 0 10px;
+        overflow: hidden;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .art-topbar-right,
     .art-controls-right {
         justify-content: flex-end;
     }

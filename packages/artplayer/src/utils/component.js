@@ -76,7 +76,7 @@ export default class Component {
             events.push(destroyEvent);
         }
 
-        if (option.selector && ['left', 'right'].includes(option.position)) {
+        if (option.selector && ['left', 'right', 'top-left', 'top-right'].includes(option.position)) {
             this.selector(option, $ref, events);
         }
 
