@@ -77,7 +77,6 @@ export default function playlistMix(art) {
     let playlist = normalizePlaylist();
     let playlistIndex = -1;
     let page = 'playlist';
-    let fileInput = null;
 
     function render() {
         if (art.template?.$playlist) {
@@ -448,27 +447,6 @@ export default function playlistMix(art) {
             const node = target?.closest?.('.art-playlist-node');
             const item = target?.closest?.('.art-playlist-item');
             const id = item?.dataset?.id;
-            const form = art.template.$playlist.querySelector('.art-playlist-form');
-            const nameInput = form?.querySelector('[data-field="name"]');
-            const urlInput = form?.querySelector('[data-field="url"]');
-
-            const showForm = (type) => {
-                if (!form) return;
-                form.dataset.type = type;
-                form.classList.add('is-active');
-                if (nameInput) {
-                    nameInput.value = '';
-                    nameInput.focus();
-                }
-                if (urlInput) urlInput.value = '';
-            };
-
-            const hideForm = () => {
-                if (!form) return;
-                form.classList.remove('is-active');
-                form.dataset.type = '';
-            };
-
             if (pageName) {
                 art.renderPlaylist(pageName);
                 return;
@@ -489,36 +467,6 @@ export default function playlistMix(art) {
                     break;
                 case 'toggle-menu':
                     if (item) item.classList.toggle('is-menu-open');
-                    break;
-                case 'show-add-folder':
-                    showForm('folder');
-                    break;
-                case 'show-add-url':
-                    showForm('url');
-                    break;
-                case 'submit-add': {
-                    const type = form?.dataset?.type;
-                    const name = nameInput?.value || '';
-                    const url = urlInput?.value || '';
-                    if (type === 'folder' && name.trim()) await art.playlistCreateFolder(name);
-                    if (type === 'url' && url.trim()) await art.playlistAddUrl(url, name);
-                    hideForm();
-                    break;
-                }
-                case 'add-file':
-                    if (!fileInput) {
-                        fileInput = document.createElement('input');
-                        fileInput.type = 'file';
-                        fileInput.multiple = true;
-                        fileInput.accept = 'audio/*,video/*';
-                        fileInput.style.display = 'none';
-                        art.template.$player.appendChild(fileInput);
-                        art.events.proxy(fileInput, 'change', async () => {
-                            await Promise.all(Array.from(fileInput.files || []).map((file) => art.playlistAddFile(file)));
-                            fileInput.value = '';
-                        });
-                    }
-                    fileInput.click();
                     break;
                 case 'clear-history':
                     await art.clearPlaylistHistory();

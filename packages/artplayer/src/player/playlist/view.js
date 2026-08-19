@@ -7,11 +7,7 @@ const icon = {
     arrow: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="m9 18 6-6-6-6"></path></svg>',
     favorite: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M11.5 2.3a.6.6 0 0 1 1 0l2.7 5.4 6 .9a.6.6 0 0 1 .3 1l-4.4 4.3 1 6a.6.6 0 0 1-.9.6L12 17.7l-5.3 2.8a.6.6 0 0 1-.8-.7l1-6-4.4-4.2a.6.6 0 0 1 .3-1l6-.9 2.7-5.4z"></path></svg>',
     more: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>',
-    folder: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 10v6"></path><path d="M9 13h6"></path><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg>',
-    file: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M12 18v-6"></path><path d="m9 15 3 3 3-3"></path></svg>',
-    link: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"></path><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"></path></svg>',
     remove: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>',
-    check: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6 9 17l-5-5"></path></svg>',
 };
 
 function getItemText(item) {
@@ -108,16 +104,8 @@ export function renderPlaylist(art, page = 'playlist') {
             <div class="art-playlist-header">
                 <strong>${i18n.get('Playlist')}</strong>
                 <div class="art-playlist-tools">
-                    <button data-action="show-add-folder" title="${i18n.get('New Folder')}">${icon.folder}</button>
-                    <button data-action="add-file" title="${i18n.get('Add File')}">${icon.file}</button>
-                    <button data-action="show-add-url" title="${i18n.get('Add Link')}">${icon.link}</button>
                     <button data-action="close" title="${i18n.get('Close')}">${icon.close}</button>
                 </div>
-            </div>
-            <div class="art-playlist-form">
-                <input data-field="name" type="text" placeholder="${i18n.get('Name')}">
-                <input data-field="url" type="text" placeholder="${i18n.get('Media Link')}">
-                <button data-action="submit-add" title="${i18n.get('Add')}">${icon.check}</button>
             </div>
             <div class="art-playlist-tabs">
                 <button data-page="playlist" class="${page === 'playlist' ? 'is-active' : ''}">${i18n.get('Playlist')}</button>
