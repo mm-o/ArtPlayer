@@ -142,6 +142,7 @@
         white-space: nowrap;
     }
 
+    .art-playlist-node-toggle,
     .art-playlist-favorite,
     .art-playlist-more {
         justify-content: center;
@@ -149,6 +150,11 @@
         width: 32px;
         height: 24px;
         opacity: 0.65;
+    }
+
+    .art-playlist-node-toggle {
+        margin-left: calc(var(--art-playlist-level, 0) * 14px);
+        transition: transform var(--art-transition-duration) ease;
     }
 
     .art-playlist-item.is-favorite .art-playlist-favorite {
@@ -219,7 +225,8 @@
         transition: transform var(--art-transition-duration) ease;
     }
 
-    .art-playlist-node.is-expanded > .art-playlist-node-title .art-playlist-node-arrow {
+    .art-playlist-node.is-expanded > .art-playlist-node-title .art-playlist-node-arrow,
+    .art-playlist-node.is-expanded > .art-playlist-item .art-playlist-node-toggle {
         transform: rotate(90deg);
     }
 }

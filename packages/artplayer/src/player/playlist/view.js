@@ -14,13 +14,14 @@ function getItemText(item) {
     return escapeText(item?.title || item?.name || item?.url || 'Media');
 }
 
-function renderItem(item, current, i18n) {
+function renderItem(item, current, i18n, toggle = '') {
     const active = current && (current.id === item.id || current.url === item.url);
     const favorite = item._favorite ? ' is-favorite' : '';
     const id = escapeText(item.id || item.url);
 
     return `
         <div class="art-playlist-item${active ? ' is-active' : ''}${favorite}" data-id="${id}">
+            ${toggle}
             <button class="art-playlist-play" data-action="play" title="Play">
                 <span class="art-playlist-text">${getItemText(item)}</span>
             </button>
@@ -50,6 +51,8 @@ function renderNode(node, current, i18n, level = 0) {
     const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, level + 1)).join('');
     const content = isMedia
         ? renderItem(item, current, i18n)
+        : item && hasChildren
+          ? renderItem(item, current, i18n, `<button class="art-playlist-node-toggle" data-action="toggle-node" title="Toggle">${icon.arrow}</button>`)
         : `<button class="art-playlist-node-title" data-action="toggle-node">
               <span class="art-playlist-text">${escapeText(node.name)}</span>
               <span class="art-playlist-node-arrow">${hasChildren ? icon.arrow : ''}</span>
