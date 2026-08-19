@@ -47,6 +47,9 @@ const zhTw = {
     'Loop Segment': '循環片段',
     'Media Notes': '媒體筆記',
     'Screenshot copied': '截圖已複製',
+    'Toolbar Buttons': '工具列按鈕',
+    Pinned: '已釘住',
+    Hidden: '已收納',
 };
 
 export default zhTw;

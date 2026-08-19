@@ -47,6 +47,9 @@ const zhCn = {
     'Loop Segment': '循环片段',
     'Media Notes': '媒体笔记',
     'Screenshot copied': '截图已复制',
+    'Toolbar Buttons': '工具栏按钮',
+    Pinned: '已钉住',
+    Hidden: '已收纳',
 };
 
 export default zhCn;

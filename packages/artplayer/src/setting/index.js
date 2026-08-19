@@ -18,6 +18,34 @@ import {
     includeFromEvent,
 } from '../utils';
 
+function toolbarControls(art) {
+    const { controls, i18n, icons, constructor } = art;
+    const selector = controls.pinItems.map((item) => {
+        const pinned = controls.isPinned(item.name);
+        return {
+            name: `pin-${item.name}`,
+            html: item.html,
+            tooltip: i18n.get(pinned ? 'Pinned' : 'Hidden'),
+            icon: icons.config,
+            switch: pinned,
+            onSwitch(target) {
+                const next = controls.setPinned(item.name, !target.switch);
+                target.tooltip = i18n.get(next ? 'Pinned' : 'Hidden');
+                return next;
+            },
+        };
+    });
+
+    return {
+        width: constructor.SETTING_ITEM_WIDTH,
+        name: 'toolbarControls',
+        html: i18n.get('Toolbar Buttons'),
+        tooltip: `${selector.filter((item) => item.switch).length}/${selector.length}`,
+        icon: icons.config,
+        selector,
+    };
+}
+
 export default class Setting extends Component {
     constructor(art) {
         super(art);
@@ -78,6 +106,10 @@ export default class Setting extends Component {
 
         if (option.subtitleOffset) {
             result.push(subtitleOffset(this.art));
+        }
+
+        if (option.setting && this.art.controls?.pinItems?.length) {
+            result.push(toolbarControls(this.art));
         }
 
         return result;

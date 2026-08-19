@@ -31,6 +31,9 @@ export default class Control extends Component {
         this.isHover = false;
         this.name = 'control';
         this.timer = Date.now();
+        this.pinState = art.storage.get('controlPins') || {};
+        this.pinItems = [];
+        this.pinOptions = new Map();
 
         const { constructor } = art;
         const { $player, $bottom, $topbar } = this.art.template;
@@ -86,7 +89,9 @@ export default class Control extends Component {
         this.initTopbarTitle();
 
         if (!option.isLive) {
-            this.add(
+            this.addPinned(
+                'progress',
+                'Progress',
                 progress({
                     name: 'progress',
                     position: 'top',
@@ -95,13 +100,15 @@ export default class Control extends Component {
             );
         }
 
-        this.add({
+        this.addPinned('thumbnails', 'Thumbnails', {
             name: 'thumbnails',
             position: 'top',
             index: 20,
         });
 
-        this.add(
+        this.addPinned(
+            'playAndPause',
+            'Play',
             playAndPause({
                 name: 'playAndPause',
                 position: 'left',
@@ -112,6 +119,11 @@ export default class Control extends Component {
         if (option.playlist && !isMobile) {
             const playlistOption = typeof option.playlist === 'object' ? option.playlist : {};
             const playlistControls = playlistOption.controls || ['playlistPrev', 'playlistNext', 'playlist'];
+            const playlistTooltips = {
+                playlist: 'Playlist',
+                playlistPrev: 'Previous',
+                playlistNext: 'Next',
+            };
             const playlistControlOptions = {
                 playlist: ['top-left', 5],
                 playlistPrev: ['left', 9],
@@ -121,7 +133,9 @@ export default class Control extends Component {
             playlistControls.forEach((name) => {
                 const control = playlistControlOptions[name];
                 if (!control) return;
-                this.add(
+                this.addPinned(
+                    name,
+                    playlistTooltips[name],
                     playlist({
                         name,
                         position: control[0],
@@ -131,7 +145,9 @@ export default class Control extends Component {
             });
         }
 
-        this.add(
+        this.addPinned(
+            'volume',
+            'Volume',
             volume({
                 name: 'volume',
                 position: 'left',
@@ -140,7 +156,9 @@ export default class Control extends Component {
         );
 
         if (!option.isLive) {
-            this.add(
+            this.addPinned(
+                'time',
+                'Time',
                 time({
                     name: 'time',
                     position: 'left',
@@ -165,7 +183,9 @@ export default class Control extends Component {
         if (Array.isArray(actions) && !isMobile) {
             actions.forEach((name) => {
                 if (!actionOptions[name]) return;
-                this.add(
+                this.addPinned(
+                    name,
+                    actionOptions[name][0],
                     action({
                         name,
                         tooltip: actionOptions[name][0],
@@ -177,7 +197,9 @@ export default class Control extends Component {
         }
 
         if (option.screenshot && !isMobile) {
-            this.add(
+            this.addPinned(
+                'screenshot',
+                'Screenshot',
                 screenshot({
                     name: 'screenshot',
                     position: 'top-right',
@@ -197,7 +219,9 @@ export default class Control extends Component {
         }
 
         if (option.pip) {
-            this.add(
+            this.addPinned(
+                'pip',
+                'PIP Mode',
                 pip({
                     name: 'pip',
                     position: 'right',
@@ -207,7 +231,9 @@ export default class Control extends Component {
         }
 
         if (option.airplay && window.WebKitPlaybackTargetAvailabilityEvent) {
-            this.add(
+            this.addPinned(
+                'airplay',
+                'AirPlay',
                 airplay({
                     name: 'airplay',
                     position: 'right',
@@ -217,7 +243,9 @@ export default class Control extends Component {
         }
 
         if (option.fullscreenWeb) {
-            this.add(
+            this.addPinned(
+                'fullscreenWeb',
+                'Web Fullscreen',
                 fullscreenWeb({
                     name: 'fullscreenWeb',
                     position: 'right',
@@ -227,7 +255,9 @@ export default class Control extends Component {
         }
 
         if (option.fullscreen) {
-            this.add(
+            this.addPinned(
+                'fullscreen',
+                'Fullscreen',
                 fullscreen({
                     name: 'fullscreen',
                     position: 'right',
@@ -237,8 +267,43 @@ export default class Control extends Component {
         }
 
         for (let index = 0; index < option.controls.length; index++) {
-            this.add(option.controls[index]);
+            const control = option.controls[index];
+            this.addPinned(control.name, control.tooltip || control.name, control);
         }
+    }
+
+    isPinned(name) {
+        return this.pinState[name] !== false;
+    }
+
+    setPinned(name, value) {
+        this.pinState[name] = !!value;
+        this.art.storage.set('controlPins', this.pinState);
+
+        const option = this.pinOptions.get(name);
+        if (!option) return value;
+
+        if (value) {
+            if (!this.cache.has(name)) this.add(option);
+        } else if (this.cache.has(name)) {
+            this.remove(name);
+        }
+
+        return value;
+    }
+
+    addPinned(name, html, getOption) {
+        const option = typeof getOption === 'function' ? getOption(this.art) : getOption;
+        if (!option?.name) return this.add(option);
+
+        this.pinOptions.set(option.name, option);
+        this.pinItems.push({
+            name: option.name,
+            html: this.art.i18n.get(html || option.tooltip || option.name),
+        });
+
+        if (this.isPinned(option.name)) return this.add(option);
+        return null;
     }
 
     add(getOption) {
