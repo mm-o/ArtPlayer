@@ -47,12 +47,10 @@ function renderGroup(group, current, i18n) {
 function renderNode(node, current, i18n, level = 0) {
     const item = node.item || (node.url ? node : null);
     const hasChildren = !!node.children?.length || typeof node.loadChildren === 'function';
-    const isMedia = item && !hasChildren && node.type === 'media';
+    const isMedia = item && node.type === 'media';
     const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, level + 1)).join('');
     const content = isMedia
-        ? renderItem(item, current, i18n)
-        : item && hasChildren
-          ? renderItem(item, current, i18n, `<button class="art-playlist-node-toggle" data-action="toggle-node" title="Toggle">${icon.arrow}</button>`)
+        ? renderItem(item, current, i18n, hasChildren ? `<button class="art-playlist-node-toggle" data-action="toggle-node" title="Toggle">${icon.arrow}</button>` : '')
         : `<button class="art-playlist-node-title" data-action="toggle-node">
               <span class="art-playlist-text">${escapeText(node.name)}</span>
               <span class="art-playlist-node-arrow">${hasChildren ? icon.arrow : ''}</span>

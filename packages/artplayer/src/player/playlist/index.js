@@ -175,7 +175,9 @@ export default function playlistMix(art) {
 
     def(art, 'playlistPlay', {
         value(id) {
-            return playItem(findItem(playlist, id) || findNode(playlist.roots, id)?.node?.item || playlist.items[playlistIndex] || null);
+            const result = findNode(playlist.roots, id);
+            const nodeItem = result?.node?.type === 'media' ? result.node.item : null;
+            return playItem(findItem(playlist, id) || nodeItem || (id ? null : playlist.items[playlistIndex]) || null);
         },
     });
 
