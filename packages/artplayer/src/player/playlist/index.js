@@ -31,11 +31,18 @@ function findNode(nodes, id, parent = null) {
     return null;
 }
 
+function getTreeRoots(playlist) {
+    return [...playlist.roots, ...playlist.favoritesRoots, ...playlist.historyRoots];
+}
+
+function getTreeItems(playlist) {
+    return collectNodeItems(getTreeRoots(playlist));
+}
+
 function findAnyItem(playlist, id) {
     return (
         findItem(playlist, id) ||
-        collectNodeItems(playlist.favoritesRoots).find((item) => item.id === id || item.url === id) ||
-        collectNodeItems(playlist.historyRoots).find((item) => item.id === id || item.url === id) ||
+        getTreeItems(playlist).find((item) => item.id === id || item.url === id) ||
         playlist.favorites.find((item) => item.id === id || item.url === id) ||
         playlist.history.find((item) => item.id === id || item.url === id) ||
         null
@@ -43,7 +50,7 @@ function findAnyItem(playlist, id) {
 }
 
 function findAnyNode(playlist, id) {
-    return findNode([...playlist.roots, ...playlist.favoritesRoots, ...playlist.historyRoots], id);
+    return findNode(getTreeRoots(playlist), id);
 }
 
 function removeFromGroups(groups, id) {
@@ -75,9 +82,7 @@ async function applyHook(playlist, name, ...args) {
 
 function updateItems(playlist) {
     const groupItems = playlist.groups.flatMap((group) => group.items);
-    const treeItems = collectNodeItems(playlist.roots);
-    const collectionItems = [...collectNodeItems(playlist.favoritesRoots), ...collectNodeItems(playlist.historyRoots)];
-    playlist.items = uniqueItems([...groupItems, ...treeItems, ...collectionItems, ...(playlist._items || [])]);
+    playlist.items = uniqueItems([...groupItems, ...getTreeItems(playlist), ...(playlist._items || [])]);
 }
 
 export default function playlistMix(art) {
@@ -282,9 +287,7 @@ export default function playlistMix(art) {
                     updateNodes(node.children || []);
                 });
             };
-            updateNodes(playlist.roots);
-            updateNodes(playlist.favoritesRoots);
-            updateNodes(playlist.historyRoots);
+            [playlist.roots, playlist.favoritesRoots, playlist.historyRoots].forEach(updateNodes);
             updateItems(playlist);
             emitChange('update', next);
             return next;
