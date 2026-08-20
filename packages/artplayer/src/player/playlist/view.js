@@ -51,7 +51,10 @@ function renderNode(node, current, i18n, level = 0, offset = '') {
     const isMedia = item && node.type === 'media';
     const childrenLayout = node.childrenLayout || (isMedia ? 'flat' : 'tree');
     const childLevel = childrenLayout === 'flat' ? level : level + 1;
-    const childOffset = childrenLayout === 'flat' && isMedia ? `calc(32px + ${level} * 14px)` : '';
+    const childOffset =
+        childrenLayout === 'flat' && isMedia
+            ? 'calc(var(--art-playlist-toggle-size) + var(--art-playlist-level, 0) * var(--art-playlist-indent))'
+            : '';
     const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, childLevel, childOffset)).join('');
     const content = isMedia
         ? renderItem(item, current, i18n, hasChildren ? `<button class="art-playlist-node-toggle" data-action="toggle-node" title="Toggle">${icon.arrow}</button>` : '', offset)
