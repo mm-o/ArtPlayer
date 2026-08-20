@@ -11,8 +11,7 @@
         background-color: var(--art-widget-background);
 
         .art-info-panel {
-            display: flex;
-            flex-direction: column;
+            .art-widget-panel();
             gap: 5px;
             max-height: calc(100vh - var(--art-padding) * 4);
             overflow: auto;
@@ -35,8 +34,7 @@
             }
 
             .art-info-media {
-                display: flex;
-                flex-direction: column;
+                .art-widget-panel();
                 gap: 5px;
             }
         }

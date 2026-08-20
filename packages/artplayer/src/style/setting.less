@@ -15,29 +15,15 @@
         background-color: var(--art-widget-background);
 
         .art-setting-panel {
+            .art-widget-panel();
             display: none;
-            flex-direction: column;
 
             &.art-current {
                 display: flex;
             }
 
             .art-setting-item {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 0 5px;
-                cursor: pointer;
-                overflow: hidden;
-                transition: background-color var(--art-transition-duration) ease;
-
-                &:hover {
-                    background-color: rgba(255, 255, 255, 0.1);
-                }
-
-                &.art-current {
-                    color: var(--art-theme);
-                }
+                .art-widget-item();
 
                 .art-icon-check {
                     visibility: hidden;
@@ -54,9 +40,7 @@
                     gap: 5px;
 
                     .art-setting-item-left-icon {
-                        .art-center();
-                        height: var(--art-settings-icon-size);
-                        width: var(--art-settings-icon-size);
+                        .art-widget-icon();
                     }
                 }
 
@@ -71,9 +55,7 @@
                     }
 
                     .art-setting-item-right-icon {
-                        .art-center();
-                        min-width: 32px;
-                        height: 24px;
+                        .art-widget-icon(32px);
                     }
 
                     .art-setting-range {

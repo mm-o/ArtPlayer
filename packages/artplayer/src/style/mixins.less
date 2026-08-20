@@ -35,3 +35,36 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+.art-widget-panel() {
+    display: flex;
+    flex-direction: column;
+}
+
+.art-widget-item(@cursor: pointer) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 35px;
+    padding: 0 5px;
+    cursor: @cursor;
+    overflow: hidden;
+    transition: background-color var(--art-transition-duration) ease;
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    &.art-current,
+    &.is-active {
+        color: var(--art-theme);
+    }
+}
+
+.art-widget-icon(@size: var(--art-settings-icon-size)) {
+    .art-center();
+    flex-shrink: 0;
+    width: @size;
+    min-width: @size;
+    height: @size;
+}

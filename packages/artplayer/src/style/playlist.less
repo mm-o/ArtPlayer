@@ -23,8 +23,7 @@
     }
 
     .art-playlist-panel {
-        display: flex;
-        flex-direction: column;
+        .art-widget-panel();
         min-width: 0;
         min-height: 0;
         max-height: inherit;
@@ -81,19 +80,13 @@
     }
 
     .art-playlist-tabs button {
+        .art-widget-item();
         justify-content: center;
         flex: 1;
-        min-height: 35px;
         opacity: 0.75;
-        transition: background-color var(--art-transition-duration) ease;
-    }
-
-    .art-playlist-tabs button:hover {
-        background-color: rgba(255, 255, 255, 0.1);
     }
 
     .art-playlist-tabs button.is-active {
-        color: var(--art-theme);
         opacity: 1;
     }
 
@@ -105,25 +98,15 @@
     }
 
     .art-playlist-group-title {
+        .art-widget-item(default);
         justify-content: space-between;
-        min-height: 35px;
-        padding: 0 5px 0 10px;
+        padding-left: 10px;
         opacity: 0.85;
     }
 
     .art-playlist-item {
+        .art-widget-item();
         position: relative;
-        min-height: 35px;
-        overflow: hidden;
-        transition: background-color var(--art-transition-duration) ease;
-    }
-
-    .art-playlist-item:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .art-playlist-item.is-active {
-        color: var(--art-theme);
     }
 
     .art-playlist-play {
@@ -145,10 +128,7 @@
     .art-playlist-node-toggle,
     .art-playlist-favorite,
     .art-playlist-more {
-        justify-content: center;
-        flex-shrink: 0;
-        width: 32px;
-        height: 24px;
+        .art-widget-icon(32px);
         opacity: 0.65;
     }
 
@@ -191,15 +171,14 @@
     }
 
     .art-playlist-menu button {
+        .art-widget-item();
         gap: 6px;
         width: 100%;
-        min-height: 28px;
         padding: 0 6px;
         opacity: 0.8;
     }
 
     .art-playlist-menu button:hover {
-        background-color: rgba(255, 255, 255, 0.1);
         opacity: 1;
     }
 
@@ -211,20 +190,13 @@
     }
 
     .art-playlist-node-title {
+        .art-widget-item();
         justify-content: flex-start;
         width: 100%;
-        transition: background-color var(--art-transition-duration) ease;
-    }
-
-    .art-playlist-node-title:hover {
-        background-color: rgba(255, 255, 255, 0.1);
     }
 
     .art-playlist-node-arrow {
-        .art-center();
-        flex-shrink: 0;
-        width: 32px;
-        height: 24px;
+        .art-widget-icon(32px);
         margin-left: auto;
         transition: transform var(--art-transition-duration) ease;
     }
