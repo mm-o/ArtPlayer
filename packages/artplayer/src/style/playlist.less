@@ -157,6 +157,14 @@
         transition: transform var(--art-transition-duration) ease;
     }
 
+    .art-playlist-node-toggle + .art-playlist-play {
+        padding-left: 0;
+    }
+
+    .art-playlist-node.is-media-node > .art-playlist-node-children > .art-playlist-node > .art-playlist-item .art-playlist-play {
+        padding-left: calc(32px + var(--art-playlist-level, 0) * 14px);
+    }
+
     .art-playlist-item.is-favorite .art-playlist-favorite {
         opacity: 1;
         color: var(--art-theme);

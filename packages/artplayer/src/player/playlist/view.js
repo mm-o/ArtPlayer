@@ -48,7 +48,8 @@ function renderNode(node, current, i18n, level = 0) {
     const item = node.item || (node.url ? node : null);
     const hasChildren = !!node.children?.length || typeof node.loadChildren === 'function';
     const isMedia = item && node.type === 'media';
-    const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, level + 1)).join('');
+    const childLevel = isMedia ? level : level + 1;
+    const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, childLevel)).join('');
     const content = isMedia
         ? renderItem(item, current, i18n, hasChildren ? `<button class="art-playlist-node-toggle" data-action="toggle-node" title="Toggle">${icon.arrow}</button>` : '')
         : `<button class="art-playlist-node-title" data-action="toggle-node">
@@ -57,7 +58,7 @@ function renderNode(node, current, i18n, level = 0) {
            </button>`;
 
     return `
-        <div class="art-playlist-node${node.expanded === false ? '' : ' is-expanded'}" data-id="${escapeText(node.id)}" style="--art-playlist-level:${level}">
+        <div class="art-playlist-node${isMedia ? ' is-media-node' : ''}${node.expanded === false ? '' : ' is-expanded'}" data-id="${escapeText(node.id)}" style="--art-playlist-level:${level}">
             ${content}
             ${children ? `<div class="art-playlist-node-children">${children}</div>` : ''}
         </div>
