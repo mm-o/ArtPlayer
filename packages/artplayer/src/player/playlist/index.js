@@ -34,10 +34,16 @@ function findNode(nodes, id, parent = null) {
 function findAnyItem(playlist, id) {
     return (
         findItem(playlist, id) ||
+        collectNodeItems(playlist.favoritesRoots).find((item) => item.id === id || item.url === id) ||
+        collectNodeItems(playlist.historyRoots).find((item) => item.id === id || item.url === id) ||
         playlist.favorites.find((item) => item.id === id || item.url === id) ||
         playlist.history.find((item) => item.id === id || item.url === id) ||
         null
     );
+}
+
+function findAnyNode(playlist, id) {
+    return findNode([...playlist.roots, ...playlist.favoritesRoots, ...playlist.historyRoots], id);
 }
 
 function removeFromGroups(groups, id) {
@@ -70,7 +76,8 @@ async function applyHook(playlist, name, ...args) {
 function updateItems(playlist) {
     const groupItems = playlist.groups.flatMap((group) => group.items);
     const treeItems = collectNodeItems(playlist.roots);
-    playlist.items = uniqueItems([...groupItems, ...treeItems, ...(playlist._items || [])]);
+    const collectionItems = [...collectNodeItems(playlist.favoritesRoots), ...collectNodeItems(playlist.historyRoots)];
+    playlist.items = uniqueItems([...groupItems, ...treeItems, ...collectionItems, ...(playlist._items || [])]);
 }
 
 export default function playlistMix(art) {
@@ -175,8 +182,8 @@ export default function playlistMix(art) {
 
     def(art, 'playlistPlay', {
         value(id) {
-            const result = findNode(playlist.roots, id);
-            const nodeItem = result?.node?.type === 'media' ? result.node.item : null;
+            const anyResult = findAnyNode(playlist, id);
+            const nodeItem = anyResult?.node?.type === 'media' ? anyResult.node.item : null;
             return playItem(findItem(playlist, id) || nodeItem || (id ? null : playlist.items[playlistIndex]) || null);
         },
     });
@@ -276,6 +283,8 @@ export default function playlistMix(art) {
                 });
             };
             updateNodes(playlist.roots);
+            updateNodes(playlist.favoritesRoots);
+            updateNodes(playlist.historyRoots);
             updateItems(playlist);
             emitChange('update', next);
             return next;
@@ -294,6 +303,8 @@ export default function playlistMix(art) {
             playlist.favorites = playlist.favorites.filter((item) => !isSameItem(item, id));
             playlist.history = playlist.history.filter((item) => !isSameItem(item, id));
             playlist.roots = removeFromNodes(playlist.roots, id);
+            playlist.favoritesRoots = removeFromNodes(playlist.favoritesRoots, id);
+            playlist.historyRoots = removeFromNodes(playlist.historyRoots, id);
             removeFromGroups(playlist.groups, id);
             updateItems(playlist);
             setCurrent(Math.min(playlistIndex, playlist.items.length - 1));
@@ -310,13 +321,13 @@ export default function playlistMix(art) {
 
     def(art, 'playlistGetNode', {
         value(id) {
-            return findNode(playlist.roots, id)?.node || null;
+            return findAnyNode(playlist, id)?.node || null;
         },
     });
 
     def(art, 'playlistExpandNode', {
         async value(id, expanded = true) {
-            const result = findNode(playlist.roots, id);
+            const result = findAnyNode(playlist, id);
             if (!result) return null;
 
             const { node } = result;

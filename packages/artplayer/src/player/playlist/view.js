@@ -68,7 +68,11 @@ function renderNode(node, current, i18n, level = 0, offset = '') {
     `;
 }
 
-function renderCollection(name, items, current, i18n, clearable = false) {
+function renderCollection(name, items, roots, current, i18n, clearable = false) {
+    const body = roots.length
+        ? roots.map((node) => renderNode(node, current, i18n)).join('')
+        : items.map((item) => renderItem(item, current, i18n)).join('');
+
     return `
         <section class="art-playlist-group is-expanded">
             <div class="art-playlist-group-title">
@@ -76,7 +80,7 @@ function renderCollection(name, items, current, i18n, clearable = false) {
                 ${clearable ? `<button data-action="clear-history">${i18n.get('Clear')}</button>` : ''}
             </div>
             <div class="art-playlist-group-items">
-                ${items.length ? items.map((item) => renderItem(item, current, i18n)).join('') : `<div class="art-playlist-empty">${i18n.get('Empty')}</div>`}
+                ${body || `<div class="art-playlist-empty">${i18n.get('Empty')}</div>`}
             </div>
         </section>
     `;
@@ -95,13 +99,15 @@ export function renderPlaylist(art, page = 'playlist') {
     });
     const markedGroups = playlist.groups.map((group) => ({ ...group, items: group.items.map(markFavorite) }));
     const markedRoots = playlist.roots.map(markNodeFavorite);
+    const markedFavoritesRoots = playlist.favoritesRoots.map(markNodeFavorite);
+    const markedHistoryRoots = playlist.historyRoots.map(markNodeFavorite);
     const markedFavorites = playlist.favorites.map((item) => ({ ...item, _favorite: true }));
     const markedHistory = playlist.history.map(markFavorite);
     const body =
         page === 'favorites'
-            ? renderCollection(i18n.get('Favorites'), markedFavorites, currentPlaylistItem, i18n)
+            ? renderCollection(i18n.get('Favorites'), markedFavorites, markedFavoritesRoots, currentPlaylistItem, i18n)
             : page === 'history'
-              ? renderCollection(i18n.get('History'), markedHistory, currentPlaylistItem, i18n, true)
+              ? renderCollection(i18n.get('History'), markedHistory, markedHistoryRoots, currentPlaylistItem, i18n, true)
               : `${markedGroups.map((group) => renderGroup(group, currentPlaylistItem, i18n)).join('')}
                  ${markedRoots.map((node) => renderNode(node, currentPlaylistItem, i18n)).join('')}`;
 

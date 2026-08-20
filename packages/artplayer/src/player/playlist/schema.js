@@ -95,6 +95,8 @@ export function normalizePlaylist(input = {}) {
     const playlist = isObject(input) ? input : {};
     const groups = Array.isArray(playlist.groups) ? playlist.groups.map(normalizeGroup).filter(Boolean) : [];
     const roots = normalizeNodes(playlist.roots || playlist.tree?.roots, 'root');
+    const favoritesRoots = normalizeNodes(playlist.favoritesRoots || playlist.collections?.favorites?.roots, 'favorite-root');
+    const historyRoots = normalizeNodes(playlist.historyRoots || playlist.collections?.history?.roots, 'history-root');
     const groupItems = groups.flatMap((group) => group.items);
     const treeItems = collectNodeItems(roots);
     const fallbackItems = normalizeItems(playlist.items, 'playlist');
@@ -106,6 +108,8 @@ export function normalizePlaylist(input = {}) {
         title: String(playlist.title || playlist.name || 'Playlist'),
         groups,
         roots,
+        favoritesRoots,
+        historyRoots,
         items,
         _items: fallbackItems,
         favorites: normalizeItems(playlist.favorites, 'favorite'),
