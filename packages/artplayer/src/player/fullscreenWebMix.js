@@ -1,4 +1,4 @@
-import { addClass, removeClass, hasClass, def, append, setStyle, getStyle } from '../utils';
+import { addClass, removeClass, hasClass, def, append, setStyle } from '../utils';
 
 export default function fullscreenWebMix(art) {
     const {
@@ -7,24 +7,15 @@ export default function fullscreenWebMix(art) {
     } = art;
 
     let cssText = '';
-    let containerCssText = '';
     def(art, 'fullscreenWeb', {
         get() {
             return hasClass($player, 'art-fullscreen-web');
         },
         set(value) {
-            if (value === art.fullscreenWeb) return;
-
             if (value) {
                 cssText = $player.style.cssText;
                 if (constructor.FULLSCREEN_WEB_IN_BODY) {
                     append(document.body, $player);
-                } else {
-                    containerCssText = $container.style.cssText;
-                    if (getStyle($container, 'position', false) === 'static') {
-                        setStyle($container, 'position', 'relative');
-                    }
-                    setStyle($container, 'overflow', 'hidden');
                 }
                 art.state = 'fullscreenWeb';
                 setStyle($player, 'width', '100%');
@@ -34,12 +25,11 @@ export default function fullscreenWebMix(art) {
             } else {
                 if (constructor.FULLSCREEN_WEB_IN_BODY) {
                     append($container, $player);
-                } else {
-                    $container.style.cssText = containerCssText;
-                    containerCssText = '';
                 }
-                $player.style.cssText = cssText;
-                cssText = '';
+                if (cssText) {
+                    $player.style.cssText = cssText;
+                    cssText = '';
+                }
                 removeClass($player, 'art-fullscreen-web');
                 art.emit('fullscreenWeb', false);
             }
