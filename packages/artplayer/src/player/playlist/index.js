@@ -466,13 +466,14 @@ export default function playlistMix(art) {
     def(art, 'clearPlaylistHistory', {
         async value() {
             playlist.history = [];
+            playlist.historyRoots = [];
 
             if (typeof playlist.onClearHistory === 'function') {
                 await playlist.onClearHistory(playlist);
             }
 
             art.emit('playlist:history:clear', playlist);
-            render();
+            emitChange('history:clear', playlist);
             return playlist.history;
         },
     });
