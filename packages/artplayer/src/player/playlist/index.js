@@ -72,6 +72,29 @@ function isSameItem(item, id) {
     return item?.id === id || item?.url === id;
 }
 
+function toItemNode(item) {
+    return normalizeNodes([{ id: item.id || item.url, type: 'media', item }], 'favorite')[0];
+}
+
+function syncFavoriteRoots(playlist, item, favorite) {
+    const id = item?.id || item?.url;
+    if (!id || !playlist.favoritesRoots.length) return;
+
+    playlist.favoritesRoots = removeFromNodes(playlist.favoritesRoots, id);
+    if (!favorite) return;
+
+    const node = toItemNode(item);
+    if (!node) return;
+
+    const parent = playlist.favoritesRoots[0];
+    if (parent && !parent.item && parent.type !== 'media') {
+        parent.children = [node, ...(parent.children || [])];
+        parent.expanded = true;
+    } else {
+        playlist.favoritesRoots = [node, ...playlist.favoritesRoots];
+    }
+}
+
 function getName(value, fallback) {
     return String(value || '').trim() || fallback;
 }
@@ -428,13 +451,14 @@ export default function playlistMix(art) {
             playlist.favorites = favorite
                 ? [item, ...playlist.favorites]
                 : playlist.favorites.filter((current) => !isSameItem(current, item.id));
+            syncFavoriteRoots(playlist, item, favorite);
 
             if (typeof playlist.onToggleFavorite === 'function') {
                 await playlist.onToggleFavorite(item, favorite, playlist);
             }
 
             art.emit('playlist:favorite', item, favorite);
-            render();
+            emitChange('favorite', { item, favorite });
             return favorite;
         },
     });

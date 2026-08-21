@@ -36,7 +36,7 @@
     .art-playlist-header,
     .art-playlist-tabs,
     .art-playlist-group-title,
-    .art-playlist-item {
+    .art-playlist-node-title {
         display: flex;
         align-items: center;
     }
@@ -107,20 +107,8 @@
         opacity: 0.85;
     }
 
-    .art-playlist-item {
-        .art-widget-item();
-        position: relative;
-    }
-
-    .art-playlist-play {
-        flex: 1;
-        min-width: 0;
-        justify-content: flex-start;
-        padding: 0 5px 0 0;
-        overflow: hidden;
-    }
-
     .art-playlist-text {
+        display: block;
         min-width: 0;
         overflow: hidden;
         text-align: left;
@@ -128,21 +116,11 @@
         white-space: nowrap;
     }
 
-    .art-playlist-node-toggle,
+    .art-playlist-node-arrow,
     .art-playlist-favorite,
     .art-playlist-more {
         .art-widget-icon(var(--art-playlist-toggle-size));
         opacity: 0.65;
-    }
-
-    .art-playlist-node-toggle {
-        margin-left: calc(10px + var(--art-playlist-level, 0) * var(--art-playlist-indent));
-        transition: transform var(--art-transition-duration) ease;
-    }
-
-    .art-playlist-node-toggle.is-placeholder {
-        pointer-events: none;
-        visibility: hidden;
     }
 
     .art-playlist-item.is-favorite .art-playlist-favorite {
@@ -186,7 +164,6 @@
         opacity: 1;
     }
 
-    .art-playlist-node-title,
     .art-playlist-empty {
         min-height: 35px;
         opacity: 0.72;
@@ -197,19 +174,27 @@
         justify-content: flex-start;
         width: 100%;
         padding: 0 5px 0 calc(10px + var(--art-playlist-level, 0) * var(--art-playlist-indent));
+        opacity: 0.72;
+        position: relative;
     }
 
     .art-playlist-empty {
         padding: 0 5px 0 calc(10px + var(--art-playlist-level, 0) * var(--art-playlist-indent));
     }
 
+    .art-playlist-node-text {
+        flex: 1;
+        min-width: 0;
+        justify-content: flex-start;
+        padding: 0 5px 0 0;
+        overflow: hidden;
+    }
+
     .art-playlist-node-arrow {
-        .art-widget-icon(var(--art-playlist-toggle-size));
         transition: transform var(--art-transition-duration) ease;
     }
 
-    .art-playlist-node.is-expanded > .art-playlist-node-title .art-playlist-node-arrow,
-    .art-playlist-node.is-expanded > .art-playlist-item .art-playlist-node-toggle {
+    .art-playlist-node.is-expanded > .art-playlist-node-title .art-playlist-node-arrow {
         transform: rotate(90deg);
     }
 }

@@ -14,15 +14,40 @@ function getItemText(item) {
     return escapeText(item?.title || item?.name || item?.url || 'Media');
 }
 
-function renderItem(item, current, i18n, toggle = '') {
-    const active = current && (current.id === item.id || current.url === item.url);
-    const favorite = item._favorite ? ' is-favorite' : '';
-    const id = escapeText(item.id || item.url);
+function renderItemNode(item, index = 0) {
+    return {
+        id: String(item.id || item.url || `item-${index}`),
+        name: getItemText(item),
+        type: 'media',
+        item,
+    };
+}
+
+function getNodeItem(node) {
+    return node.item || (node.url ? node : null);
+}
+
+function renderNodeTitle(node, current, i18n, hasChildren) {
+    const item = getNodeItem(node);
+    const isMedia = item && node.type === 'media';
+    const active = isMedia && current && (current.id === item.id || current.url === item.url);
+    const favorite = item?._favorite ? ' is-favorite' : '';
+    const id = escapeText(item?.id || item?.url || node.id);
+    const arrow = `<span class="art-playlist-node-arrow">${hasChildren ? icon.arrow : ''}</span>`;
+
+    if (!isMedia) {
+        return `
+            <button class="art-playlist-node-title" data-action="toggle-node">
+                ${arrow}
+                <span class="art-playlist-text">${escapeText(node.name)}</span>
+            </button>
+        `;
+    }
 
     return `
-        <div class="art-playlist-item${active ? ' is-active' : ''}${favorite}" data-id="${id}">
-            ${toggle}
-            <button class="art-playlist-play" data-action="play" title="Play">
+        <div class="art-playlist-node-title art-playlist-item${active ? ' is-active' : ''}${favorite}" data-id="${id}">
+            ${hasChildren ? `<button class="art-playlist-node-arrow" data-action="toggle-node" title="Toggle">${icon.arrow}</button>` : '<span class="art-playlist-node-arrow"></span>'}
+            <button class="art-playlist-node-text" data-action="play" title="Play">
                 <span class="art-playlist-text">${getItemText(item)}</span>
             </button>
             <button class="art-playlist-favorite" data-action="favorite" title="Favorite">${icon.favorite}</button>
@@ -35,7 +60,7 @@ function renderItem(item, current, i18n, toggle = '') {
 }
 
 function renderGroup(group, current, i18n) {
-    const items = group.items.map((item) => renderItem(item, current, i18n)).join('');
+    const items = group.items.map((item, index) => renderNode(renderItemNode(item, index), current, i18n)).join('');
     return `
         <section class="art-playlist-group${group.expanded ? ' is-expanded' : ''}">
             <div class="art-playlist-group-title">${escapeText(group.name)}</div>
@@ -45,24 +70,13 @@ function renderGroup(group, current, i18n) {
 }
 
 function renderNode(node, current, i18n, level = 0) {
-    const item = node.item || (node.url ? node : null);
     const hasChildren = !!node.children?.length || typeof node.loadChildren === 'function';
-    const isMedia = item && node.type === 'media';
     const childLevel = level + 1;
     const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, childLevel)).join('');
-    const arrow = hasChildren
-        ? `<button class="art-playlist-node-toggle" data-action="toggle-node" title="Toggle">${icon.arrow}</button>`
-        : '<span class="art-playlist-node-toggle is-placeholder"></span>';
-    const content = isMedia
-        ? renderItem(item, current, i18n, arrow)
-        : `<button class="art-playlist-node-title" data-action="toggle-node">
-              <span class="art-playlist-node-arrow">${hasChildren ? icon.arrow : ''}</span>
-              <span class="art-playlist-text">${escapeText(node.name)}</span>
-           </button>`;
 
     return `
         <div class="art-playlist-node${node.expanded === false ? '' : ' is-expanded'}" data-id="${escapeText(node.id)}" style="--art-playlist-level:${level}">
-            ${content}
+            ${renderNodeTitle(node, current, i18n, hasChildren)}
             ${children ? `<div class="art-playlist-node-children">${children}</div>` : ''}
         </div>
     `;
@@ -71,7 +85,7 @@ function renderNode(node, current, i18n, level = 0) {
 function renderCollection(name, items, roots, current, i18n, clearable = false) {
     const body = roots.length
         ? roots.map((node) => renderNode(node, current, i18n)).join('')
-        : items.map((item) => renderItem(item, current, i18n)).join('');
+        : items.map((item, index) => renderNode(renderItemNode(item, index), current, i18n)).join('');
 
     return `
         <section class="art-playlist-group is-expanded">
