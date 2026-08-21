@@ -180,6 +180,7 @@ export default function mediaMix(art) {
             if (typeof art.setDanmaku === 'function') art.setDanmaku(media.danmaku || []);
             if (typeof art.setAudioTracks === 'function') art.setAudioTracks(media.audioTracks || []);
             if (media.playlist && typeof art.setPlaylist === 'function') art.setPlaylist(media.playlist, media.url);
+            if (typeof art.playlistRecordHistory === 'function') await art.playlistRecordHistory(media);
 
             if (typeof art.emit === 'function') {
                 art.emit('media:change', media);

@@ -72,8 +72,8 @@ function isSameItem(item, id) {
     return item?.id === id || item?.url === id;
 }
 
-function toItemNode(item) {
-    return normalizeNodes([{ id: item.id || item.url, type: 'media', item }], 'favorite')[0];
+function toItemNode(item, prefix = 'item') {
+    return normalizeNodes([{ id: item.id || item.url, type: 'media', item }], prefix)[0];
 }
 
 function syncFavoriteRoots(playlist, item, favorite) {
@@ -93,6 +93,29 @@ function syncFavoriteRoots(playlist, item, favorite) {
     } else {
         playlist.favoritesRoots = [node, ...playlist.favoritesRoots];
     }
+}
+
+function syncHistoryRoots(playlist, item) {
+    const id = item?.id || item?.url;
+    if (!id || !playlist.historyRoots.length) return;
+
+    const node = toItemNode(item, 'history');
+    if (!node) return;
+
+    playlist.historyRoots = removeFromNodes(playlist.historyRoots, id);
+    const parent = playlist.historyRoots[0];
+    if (parent && !parent.item && parent.type !== 'media') {
+        parent.children = [node, ...(parent.children || [])];
+        parent.expanded = true;
+    } else {
+        playlist.historyRoots = [node, ...playlist.historyRoots];
+    }
+}
+
+function toHistoryItem(item) {
+    if (!item || typeof item !== 'object') return item;
+    const { playlist, ...historyItem } = item;
+    return historyItem;
 }
 
 function getName(value, fallback) {
@@ -460,6 +483,24 @@ export default function playlistMix(art) {
             art.emit('playlist:favorite', item, favorite);
             emitChange('favorite', { item, favorite });
             return favorite;
+        },
+    });
+
+    def(art, 'playlistRecordHistory', {
+        async value(item = art.currentMedia) {
+            const next = normalizeItems([toHistoryItem(item)], 'history')[0];
+            if (!next) return null;
+
+            playlist.history = [next, ...playlist.history.filter((current) => !isSameItem(current, next.id))];
+            syncHistoryRoots(playlist, next);
+
+            if (typeof playlist.onRecordHistory === 'function') {
+                await playlist.onRecordHistory(next, playlist);
+            }
+
+            art.emit('playlist:history', next);
+            emitChange('history', next);
+            return next;
         },
     });
 
