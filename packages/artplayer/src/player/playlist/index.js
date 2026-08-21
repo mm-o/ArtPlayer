@@ -76,39 +76,23 @@ function toItemNode(item, prefix = 'item') {
     return normalizeNodes([{ id: item.id || item.url, type: 'media', item }], prefix)[0];
 }
 
-function syncFavoriteRoots(playlist, item, favorite) {
+function syncCollectionRoots(roots, item, insert, prefix) {
     const id = item?.id || item?.url;
-    if (!id || !playlist.favoritesRoots.length) return;
+    if (!id || !roots.length) return roots;
 
-    playlist.favoritesRoots = removeFromNodes(playlist.favoritesRoots, id);
-    if (!favorite) return;
+    const nextRoots = removeFromNodes(roots, id);
+    if (!insert) return nextRoots;
 
-    const node = toItemNode(item);
-    if (!node) return;
+    const node = toItemNode(item, prefix);
+    if (!node) return nextRoots;
 
-    const parent = playlist.favoritesRoots[0];
+    const parent = nextRoots[0];
     if (parent && !parent.item && parent.type !== 'media') {
         parent.children = [node, ...(parent.children || [])];
         parent.expanded = true;
+        return nextRoots;
     } else {
-        playlist.favoritesRoots = [node, ...playlist.favoritesRoots];
-    }
-}
-
-function syncHistoryRoots(playlist, item) {
-    const id = item?.id || item?.url;
-    if (!id || !playlist.historyRoots.length) return;
-
-    const node = toItemNode(item, 'history');
-    if (!node) return;
-
-    playlist.historyRoots = removeFromNodes(playlist.historyRoots, id);
-    const parent = playlist.historyRoots[0];
-    if (parent && !parent.item && parent.type !== 'media') {
-        parent.children = [node, ...(parent.children || [])];
-        parent.expanded = true;
-    } else {
-        playlist.historyRoots = [node, ...playlist.historyRoots];
+        return [node, ...nextRoots];
     }
 }
 
@@ -474,7 +458,7 @@ export default function playlistMix(art) {
             playlist.favorites = favorite
                 ? [item, ...playlist.favorites]
                 : playlist.favorites.filter((current) => !isSameItem(current, item.id));
-            syncFavoriteRoots(playlist, item, favorite);
+            playlist.favoritesRoots = syncCollectionRoots(playlist.favoritesRoots, item, favorite, 'favorite');
 
             if (typeof playlist.onToggleFavorite === 'function') {
                 await playlist.onToggleFavorite(item, favorite, playlist);
@@ -492,7 +476,7 @@ export default function playlistMix(art) {
             if (!next) return null;
 
             playlist.history = [next, ...playlist.history.filter((current) => !isSameItem(current, next.id))];
-            syncHistoryRoots(playlist, next);
+            playlist.historyRoots = syncCollectionRoots(playlist.historyRoots, next, true, 'history');
 
             if (typeof playlist.onRecordHistory === 'function') {
                 await playlist.onRecordHistory(next, playlist);
