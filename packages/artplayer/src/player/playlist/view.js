@@ -14,14 +14,13 @@ function getItemText(item) {
     return escapeText(item?.title || item?.name || item?.url || 'Media');
 }
 
-function renderItem(item, current, i18n, toggle = '', offset = '') {
+function renderItem(item, current, i18n, toggle = '') {
     const active = current && (current.id === item.id || current.url === item.url);
     const favorite = item._favorite ? ' is-favorite' : '';
     const id = escapeText(item.id || item.url);
-    const style = offset ? ` style="--art-playlist-offset:${offset}"` : '';
 
     return `
-        <div class="art-playlist-item${active ? ' is-active' : ''}${favorite}" data-id="${id}"${style}>
+        <div class="art-playlist-item${active ? ' is-active' : ''}${favorite}" data-id="${id}">
             ${toggle}
             <button class="art-playlist-play" data-action="play" title="Play">
                 <span class="art-playlist-text">${getItemText(item)}</span>
@@ -45,22 +44,20 @@ function renderGroup(group, current, i18n) {
     `;
 }
 
-function renderNode(node, current, i18n, level = 0, offset = '') {
+function renderNode(node, current, i18n, level = 0) {
     const item = node.item || (node.url ? node : null);
     const hasChildren = !!node.children?.length || typeof node.loadChildren === 'function';
     const isMedia = item && node.type === 'media';
-    const childrenLayout = node.childrenLayout || (isMedia ? 'flat' : 'tree');
-    const childLevel = childrenLayout === 'flat' ? level : level + 1;
-    const childOffset =
-        childrenLayout === 'flat' && isMedia
-            ? 'calc(var(--art-playlist-toggle-size) + var(--art-playlist-level, 0) * var(--art-playlist-indent))'
-            : '';
-    const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, childLevel, childOffset)).join('');
+    const childLevel = level + 1;
+    const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, childLevel)).join('');
+    const arrow = hasChildren
+        ? `<button class="art-playlist-node-toggle" data-action="toggle-node" title="Toggle">${icon.arrow}</button>`
+        : '<span class="art-playlist-node-toggle is-placeholder"></span>';
     const content = isMedia
-        ? renderItem(item, current, i18n, hasChildren ? `<button class="art-playlist-node-toggle" data-action="toggle-node" title="Toggle">${icon.arrow}</button>` : '', offset)
+        ? renderItem(item, current, i18n, arrow)
         : `<button class="art-playlist-node-title" data-action="toggle-node">
-              <span class="art-playlist-text">${escapeText(node.name)}</span>
               <span class="art-playlist-node-arrow">${hasChildren ? icon.arrow : ''}</span>
+              <span class="art-playlist-text">${escapeText(node.name)}</span>
            </button>`;
 
     return `
