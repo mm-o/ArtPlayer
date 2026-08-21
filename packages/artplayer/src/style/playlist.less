@@ -117,8 +117,7 @@
     }
 
     .art-playlist-node-arrow,
-    .art-playlist-favorite,
-    .art-playlist-more {
+    .art-playlist-favorite {
         .art-widget-icon(var(--art-playlist-toggle-size));
         opacity: 0.65;
     }
@@ -130,38 +129,6 @@
 
     .art-playlist-item.is-favorite .art-playlist-favorite svg path {
         fill: currentColor;
-    }
-
-    .art-playlist-menu {
-        position: absolute;
-        right: 5px;
-        top: 30px;
-        z-index: 1;
-        display: none;
-        min-width: 90px;
-        padding: 4px;
-        border-radius: var(--art-border-radius);
-        background-color: var(--art-widget-background);
-    }
-
-    .art-playlist-item.is-menu-open {
-        overflow: visible;
-    }
-
-    .art-playlist-item.is-menu-open .art-playlist-menu {
-        display: block;
-    }
-
-    .art-playlist-menu button {
-        .art-widget-item();
-        gap: 6px;
-        width: 100%;
-        padding: 0 6px;
-        opacity: 0.8;
-    }
-
-    .art-playlist-menu button:hover {
-        opacity: 1;
     }
 
     .art-playlist-empty {

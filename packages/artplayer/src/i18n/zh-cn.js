@@ -42,7 +42,6 @@ const zhCn = {
     History: '历史记录',
     Clear: '清空',
     Empty: '空',
-    Remove: '移除',
     Timestamp: '时间戳',
     'Loop Segment': '循环片段',
     'Media Notes': '媒体笔记',

@@ -13,10 +13,6 @@ function findItem(playlist, id) {
     return playlist.items.find((item) => item.id === id || item.url === id) || null;
 }
 
-function findGroup(playlist, id) {
-    return playlist.groups.find((group) => group.id === id || group.name === id) || null;
-}
-
 function findNode(nodes, id, parent = null) {
     for (let index = 0; index < nodes.length; index++) {
         const node = nodes[index];
@@ -51,12 +47,6 @@ function findAnyItem(playlist, id) {
 
 function findAnyNode(playlist, id) {
     return findNode(getTreeRoots(playlist), id);
-}
-
-function removeFromGroups(groups, id) {
-    groups.forEach((group) => {
-        group.items = group.items.filter((item) => item.id !== id && item.url !== id);
-    });
 }
 
 function removeFromNodes(nodes, id) {
@@ -100,14 +90,6 @@ function toHistoryItem(item) {
     if (!item || typeof item !== 'object') return item;
     const { playlist, ...historyItem } = item;
     return historyItem;
-}
-
-function getName(value, fallback) {
-    return String(value || '').trim() || fallback;
-}
-
-async function applyHook(playlist, name, ...args) {
-    return typeof playlist[name] === 'function' ? playlist[name](...args, playlist) : undefined;
 }
 
 function updateItems(playlist) {
@@ -235,117 +217,6 @@ export default function playlistMix(art) {
         },
     });
 
-    def(art, 'playlistAdd', {
-        value(item, groupId) {
-            const next = normalizeItems([item], 'playlist-add')[0];
-            if (!next) return null;
-
-            const targetGroupId = groupId || 'default';
-            let group = findGroup(playlist, targetGroupId);
-            if (!group) {
-                group = {
-                    id: targetGroupId,
-                    name: groupId || 'Playlist',
-                    expanded: true,
-                    items: [],
-                };
-                playlist.groups.push(group);
-            }
-            group.items.push(next);
-            updateItems(playlist);
-            emitChange('add', next);
-            return next;
-        },
-    });
-
-    def(art, 'playlistAddCurrent', {
-        value(groupId) {
-            const item = art.currentMedia || art.currentPlaylistItem || null;
-            const current = item ? findItem(playlist, item.id || item.url) : null;
-            if (current) return current;
-            return item ? art.playlistAdd(item, groupId) : null;
-        },
-    });
-
-    def(art, 'playlistAddUrl', {
-        async value(url, title) {
-            const nextUrl = String(url || '').trim();
-            if (!nextUrl) return null;
-            const hooked = await applyHook(playlist, 'onAddUrl', nextUrl, title);
-            if (hooked === false) return null;
-            return art.playlistAdd(hooked || {
-                id: nextUrl,
-                title: getName(title, nextUrl),
-                url: nextUrl,
-                _native: true,
-            });
-        },
-    });
-
-    def(art, 'playlistAddFile', {
-        async value(file) {
-            if (!file) return null;
-            const hooked = await applyHook(playlist, 'onAddFile', file);
-            if (hooked === false) return null;
-            return art.playlistAdd(hooked || {
-                id: `${file.name}-${file.size}-${file.lastModified}`,
-                title: file.name,
-                url: file,
-                _native: true,
-            });
-        },
-    });
-
-    def(art, 'playlistUpdate', {
-        value(id, patch = {}) {
-            const item = findAnyItem(playlist, id);
-            if (!item) return null;
-
-            const next = normalizeItems([{ ...item, ...patch }], 'playlist-update')[0];
-            if (!next) return null;
-
-            const update = (item) => (isSameItem(item, id) ? Object.assign(item, next) : item);
-            playlist._items = (playlist._items || []).map(update);
-            playlist.groups.forEach((group) => {
-                group.items = group.items.map(update);
-            });
-            playlist.favorites = playlist.favorites.map(update);
-            playlist.history = playlist.history.map(update);
-            const updateNodes = (nodes) => {
-                nodes.forEach((node) => {
-                    if (isSameItem(node.item, id)) node.item = update(node.item);
-                    updateNodes(node.children || []);
-                });
-            };
-            [playlist.roots, playlist.favoritesRoots, playlist.historyRoots].forEach(updateNodes);
-            updateItems(playlist);
-            emitChange('update', next);
-            return next;
-        },
-    });
-
-    def(art, 'playlistRemove', {
-        async value(id) {
-            const item = findAnyItem(playlist, id);
-            if (!item) return null;
-
-            const hooked = await applyHook(playlist, 'onRemoveItem', item);
-            if (hooked === false) return null;
-            playlist.items = playlist.items.filter((item) => !isSameItem(item, id));
-            playlist._items = (playlist._items || []).filter((item) => !isSameItem(item, id));
-            playlist.favorites = playlist.favorites.filter((item) => !isSameItem(item, id));
-            playlist.history = playlist.history.filter((item) => !isSameItem(item, id));
-            playlist.roots = removeFromNodes(playlist.roots, id);
-            playlist.favoritesRoots = removeFromNodes(playlist.favoritesRoots, id);
-            playlist.historyRoots = removeFromNodes(playlist.historyRoots, id);
-            removeFromGroups(playlist.groups, id);
-            updateItems(playlist);
-            setCurrent(Math.min(playlistIndex, playlist.items.length - 1));
-            emitChange('remove', item);
-            return item;
-        },
-    });
-
     def(art, 'playlistGetItem', {
         value(id) {
             return findAnyItem(playlist, id);
@@ -376,76 +247,6 @@ export default function playlistMix(art) {
         async value(id) {
             const node = art.playlistGetNode(id);
             return node ? art.playlistExpandNode(id, node.expanded === false) : null;
-        },
-    });
-
-    def(art, 'playlistAddNode', {
-        value(node, parentId) {
-            const next = normalizeNodes([node], parentId || 'root-add')[0];
-            if (!next) return null;
-
-            if (parentId) {
-                const parent = findNode(playlist.roots, parentId)?.node;
-                if (!parent) return null;
-                parent.children = parent.children || [];
-                parent.children.push(next);
-                parent.type = 'folder';
-                parent.expanded = true;
-                parent._loaded = true;
-            } else {
-                playlist.roots.push(next);
-            }
-
-            updateItems(playlist);
-            emitChange('add-node', next);
-            return next;
-        },
-    });
-
-    def(art, 'playlistCreateFolder', {
-        async value(name, parentId) {
-            const title = getName(name, 'New Folder');
-            const hooked = await applyHook(playlist, 'onCreateFolder', title, parentId);
-            if (hooked === false) return null;
-            return art.playlistAddNode(
-                hooked ||
-                {
-                    id: `folder-${Date.now()}`,
-                    name: title,
-                    type: 'folder',
-                    expanded: true,
-                    children: [],
-                },
-                parentId,
-            );
-        },
-    });
-
-    def(art, 'playlistRemoveNode', {
-        value(id) {
-            const result = findNode(playlist.roots, id);
-            if (!result) return null;
-
-            const [node] = result.nodes.splice(result.index, 1);
-            updateItems(playlist);
-            setCurrent(Math.min(playlistIndex, playlist.items.length - 1));
-            emitChange('remove-node', node);
-            return node;
-        },
-    });
-
-    def(art, 'playlistUpdateNode', {
-        value(id, patch = {}) {
-            const result = findNode(playlist.roots, id);
-            if (!result) return null;
-
-            const next = normalizeNodes([{ ...result.node, ...patch }], result.parent?.id || 'root-update')[0];
-            if (!next) return null;
-
-            Object.assign(result.node, next);
-            updateItems(playlist);
-            emitChange('update-node', result.node);
-            return result.node;
         },
     });
 
@@ -527,12 +328,6 @@ export default function playlistMix(art) {
                     break;
                 case 'favorite':
                     await art.togglePlaylistFavorite(id);
-                    break;
-                case 'remove':
-                    await art.playlistRemove(id);
-                    break;
-                case 'toggle-menu':
-                    if (item) item.classList.toggle('is-menu-open');
                     break;
                 case 'clear-history':
                     await art.clearPlaylistHistory();

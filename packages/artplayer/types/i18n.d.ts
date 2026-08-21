@@ -57,13 +57,6 @@ type I18nValue = {
     History: string;
     Clear: string;
     Empty: string;
-    Remove: string;
-    'New Folder': string;
-    'Add File': string;
-    'Add Link': string;
-    Add: string;
-    Name: string;
-    'Media Link': string;
     Timestamp: string;
     'Loop Segment': string;
     'Media Notes': string;

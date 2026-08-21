@@ -42,7 +42,6 @@ const zhTw = {
     History: '歷史記錄',
     Clear: '清空',
     Empty: '空',
-    Remove: '移除',
     Timestamp: '時間戳',
     'Loop Segment': '循環片段',
     'Media Notes': '媒體筆記',

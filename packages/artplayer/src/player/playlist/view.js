@@ -6,8 +6,6 @@ const icon = {
     close: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>',
     arrow: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="m9 18 6-6-6-6"></path></svg>',
     favorite: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M11.5 2.3a.6.6 0 0 1 1 0l2.7 5.4 6 .9a.6.6 0 0 1 .3 1l-4.4 4.3 1 6a.6.6 0 0 1-.9.6L12 17.7l-5.3 2.8a.6.6 0 0 1-.8-.7l1-6-4.4-4.2a.6.6 0 0 1 .3-1l6-.9 2.7-5.4z"></path></svg>',
-    more: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>',
-    remove: '<svg xmlns="http://www.w3.org/2000/svg" height="14" width="14" viewBox="0 0 24 24" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>',
 };
 
 function getItemText(item) {
@@ -51,10 +49,6 @@ function renderNodeTitle(node, current, i18n, hasChildren) {
                 <span class="art-playlist-text">${getItemText(item)}</span>
             </button>
             <button class="art-playlist-favorite" data-action="favorite" title="Favorite">${icon.favorite}</button>
-            <button class="art-playlist-more" data-action="toggle-menu" title="More">${icon.more}</button>
-            <div class="art-playlist-menu">
-                <button data-action="remove">${icon.remove}<span>${i18n.get('Remove')}</span></button>
-            </div>
         </div>
     `;
 }
