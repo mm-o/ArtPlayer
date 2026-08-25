@@ -65,6 +65,7 @@ export default {
     fullscreen: b,
     fullscreenWeb: b,
     subtitleOffset: b,
+    timestampOffset: b,
     miniProgressBar: b,
     useSSR: b,
     playsInline: b,

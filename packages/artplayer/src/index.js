@@ -18,6 +18,7 @@ import Loading from './loading';
 import Notice from './notice';
 import Mask from './mask';
 import Icons from './icons';
+import Adjust from './adjust';
 import Setting from './setting';
 import Storage from './storage';
 import Plugins from './plugins';
@@ -58,21 +59,12 @@ export default class Artplayer extends Emitter {
         this.loading = new Loading(this);
         this.hotkey = new Hotkey(this);
         this.mask = new Mask(this);
+        this.adjust = new Adjust(this);
         this.setting = new Setting(this);
         this.plugins = new Plugins(this);
 
         if (typeof readyCallback === 'function') {
             this.on('ready', () => readyCallback.call(this, this));
-        }
-
-        if (Artplayer.DEBUG) {
-            const log = (msg) => console.log(`[ART.${this.id}] -> ${msg}`);
-            log('Version@' + Artplayer.version);
-            log('Env@' + Artplayer.env);
-            log('Build@' + Artplayer.build);
-            for (let index = 0; index < config.events.length; index++) {
-                this.on('video:' + config.events[index], (event) => log('Event@' + event.type));
-            }
         }
 
         instances.push(this);
@@ -158,6 +150,7 @@ export default class Artplayer extends Emitter {
             fullscreen: false,
             fullscreenWeb: false,
             subtitleOffset: false,
+            timestampOffset: false,
             miniProgressBar: false,
             useSSR: false,
             playsInline: true,
@@ -255,7 +248,7 @@ Artplayer.PLAYBACK_RATE = [0.5, 0.75, 1, 1.25, 1.5, 2];
 Artplayer.ASPECT_RATIO = ['default', '4:3', '16:9'];
 Artplayer.FLIP = ['normal', 'horizontal', 'vertical'];
 Artplayer.FULLSCREEN_WEB_IN_BODY = false;
-Artplayer.LOG_VERSION = true;
+Artplayer.LOG_VERSION = false;
 Artplayer.USE_RAF = false;
 
 if (utils.isBrowser) {

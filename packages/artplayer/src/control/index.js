@@ -36,7 +36,9 @@ export default class Control extends Component {
         this.pinOptions = new Map();
 
         const { constructor } = art;
-        const { $player, $bottom, $topbar } = this.art.template;
+        const { $player, $bottom, $topbar, $controls } = this.art.template;
+
+        this.$controls = $controls;
 
         art.on('mousemove', () => {
             if (!isMobile) {
@@ -175,9 +177,9 @@ export default class Control extends Component {
 
         const actions = option.actions === true ? ['timestamp', 'loopSegment', 'mediaNotes'] : option.actions;
         const actionOptions = {
-            timestamp: ['Timestamp', 10],
-            loopSegment: ['Loop Segment', 11],
-            mediaNotes: ['Media Notes', 12],
+            timestamp: ['Timestamp', 10, 'Timestamp Action'],
+            loopSegment: ['Loop Segment', 11, 'Loop Segment Action'],
+            mediaNotes: ['Media Notes', 12, 'Media Notes'],
         };
 
         if (Array.isArray(actions) && !isMobile) {
@@ -188,7 +190,7 @@ export default class Control extends Component {
                     actionOptions[name][0],
                     action({
                         name,
-                        tooltip: actionOptions[name][0],
+                        tooltip: actionOptions[name][2],
                         position: 'top-right',
                         index: actionOptions[name][1],
                     }),

@@ -1,3 +1,5 @@
+import { tooltip } from '../../utils';
+
 function escapeText(value = '') {
     return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 }
@@ -25,7 +27,7 @@ function getNodeItem(node) {
     return node.item || (node.url ? node : null);
 }
 
-function renderNodeTitle(node, current, i18n, hasChildren) {
+function renderNodeTitle(node, current, hasChildren) {
     const item = getNodeItem(node);
     const isMedia = item && node.type === 'media';
     const active = isMedia && current && (current.id === item.id || current.url === item.url);
@@ -44,17 +46,17 @@ function renderNodeTitle(node, current, i18n, hasChildren) {
 
     return `
         <div class="art-playlist-node-title art-playlist-item${active ? ' is-active' : ''}${favorite}" data-id="${id}">
-            ${hasChildren ? `<button class="art-playlist-node-arrow" data-action="toggle-node" title="Toggle">${icon.arrow}</button>` : '<span class="art-playlist-node-arrow"></span>'}
-            <button class="art-playlist-node-text" data-action="play" title="Play">
+            ${hasChildren ? `<button class="art-playlist-node-arrow" data-action="toggle-node">${icon.arrow}</button>` : '<span class="art-playlist-node-arrow"></span>'}
+            <button class="art-playlist-node-text" data-action="play">
                 <span class="art-playlist-text">${getItemText(item)}</span>
             </button>
-            <button class="art-playlist-favorite" data-action="favorite" title="Favorite">${icon.favorite}</button>
+            <button class="art-playlist-favorite" data-action="favorite">${icon.favorite}</button>
         </div>
     `;
 }
 
-function renderGroup(group, current, i18n) {
-    const items = group.items.map((item, index) => renderNode(renderItemNode(item, index), current, i18n)).join('');
+function renderGroup(group, current) {
+    const items = group.items.map((item, index) => renderNode(renderItemNode(item, index), current)).join('');
     return `
         <section class="art-playlist-group${group.expanded ? ' is-expanded' : ''}">
             <div class="art-playlist-group-title">${escapeText(group.name)}</div>
@@ -63,14 +65,14 @@ function renderGroup(group, current, i18n) {
     `;
 }
 
-function renderNode(node, current, i18n, level = 0) {
+function renderNode(node, current, level = 0) {
     const hasChildren = !!node.children?.length || typeof node.loadChildren === 'function';
     const childLevel = level + 1;
-    const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, i18n, childLevel)).join('');
+    const children = node.expanded === false ? '' : (node.children || []).map((child) => renderNode(child, current, childLevel)).join('');
 
     return `
         <div class="art-playlist-node${node.expanded === false ? '' : ' is-expanded'}" data-id="${escapeText(node.id)}" style="--art-playlist-level:${level}">
-            ${renderNodeTitle(node, current, i18n, hasChildren)}
+            ${renderNodeTitle(node, current, hasChildren)}
             ${children ? `<div class="art-playlist-node-children">${children}</div>` : ''}
         </div>
     `;
@@ -78,14 +80,14 @@ function renderNode(node, current, i18n, level = 0) {
 
 function renderCollection(name, items, roots, current, i18n, clearable = false) {
     const body = roots.length
-        ? roots.map((node) => renderNode(node, current, i18n)).join('')
-        : items.map((item, index) => renderNode(renderItemNode(item, index), current, i18n)).join('');
+        ? roots.map((node) => renderNode(node, current)).join('')
+        : items.map((item, index) => renderNode(renderItemNode(item, index), current)).join('');
 
     return `
         <section class="art-playlist-group is-expanded">
             <div class="art-playlist-group-title">
                 <span>${name}</span>
-                ${clearable ? `<button data-action="clear-history">${i18n.get('Clear')}</button>` : ''}
+                ${clearable ? `<button data-action="clear-history" data-tooltip="Clear">${i18n.get('Clear')}</button>` : ''}
             </div>
             <div class="art-playlist-group-items">
                 ${body || `<div class="art-playlist-empty">${i18n.get('Empty')}</div>`}
@@ -116,15 +118,15 @@ export function renderPlaylist(art, page = 'playlist') {
             ? renderCollection(i18n.get('Favorites'), markedFavorites, markedFavoritesRoots, currentPlaylistItem, i18n)
             : page === 'history'
               ? renderCollection(i18n.get('History'), markedHistory, markedHistoryRoots, currentPlaylistItem, i18n, true)
-              : `${markedGroups.map((group) => renderGroup(group, currentPlaylistItem, i18n)).join('')}
-                 ${markedRoots.map((node) => renderNode(node, currentPlaylistItem, i18n)).join('')}`;
+              : `${markedGroups.map((group) => renderGroup(group, currentPlaylistItem)).join('')}
+                 ${markedRoots.map((node) => renderNode(node, currentPlaylistItem)).join('')}`;
 
     template.$playlist.innerHTML = `
         <div class="art-playlist-panel">
             <div class="art-playlist-header">
                 <strong>${i18n.get('Playlist')}</strong>
                 <div class="art-playlist-tools">
-                    <button data-action="close" title="${i18n.get('Close')}">${icon.close}</button>
+                    <button data-action="close" data-tooltip="Close">${icon.close}</button>
                 </div>
             </div>
             <div class="art-playlist-tabs">
@@ -137,4 +139,5 @@ export function renderPlaylist(art, page = 'playlist') {
     `;
     const nextBody = template.$playlist.querySelector('.art-playlist-body');
     if (nextBody) nextBody.scrollTop = scrollTop;
+    template.$playlist.querySelectorAll('[data-tooltip]').forEach(($button) => tooltip($button, i18n.get($button.dataset.tooltip)));
 }

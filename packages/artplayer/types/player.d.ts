@@ -19,6 +19,9 @@ export type LoopSegment = { start: number; end: number };
 export type ActionDetail = {
     type: ActionType;
     currentTime: number;
+    displayTime?: number;
+    displayTimeText?: string;
+    timestampOffset?: number;
     duration: number;
     media: ArtplayerMedia | null;
     loopSegment: LoopSegment | null;
@@ -79,6 +82,8 @@ export declare class Player {
     set theme(theme: string);
     get subtitleOffset(): number;
     set subtitleOffset(time: number);
+    get timestampOffset(): number;
+    set timestampOffset(time: number);
     set switch(url: string);
     get quality(): quality[];
     set quality(quality: quality[]);
@@ -108,7 +113,7 @@ export declare class Player {
     emitAction(type: ActionType, detail?: Record<string, any>): ActionDetail;
     captureTimestamp(detail?: Record<string, any>): ActionDetail;
     captureLoopSegment(): ActionDetail | { start: number; end: null };
-    setLoopSegment(start: number, end: number): boolean;
+    setLoopSegment(start: number, end: number, seek?: boolean): boolean;
     clearLoopSegment(): null;
     setPlaylist(playlist?: ArtplayerPlaylist, currentUrl?: string): ArtplayerPlaylist & { items: ArtplayerMedia[] };
     renderPlaylist(page?: 'playlist' | 'favorites' | 'history'): void;

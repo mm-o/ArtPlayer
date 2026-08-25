@@ -64,8 +64,8 @@ export default class Component {
         }
 
         if (option.tooltip) {
-            const tooltipPos = typeof option.position === 'string' && option.position.startsWith('top-') ? 'bottom' : 'top';
-            tooltip($ref, option.tooltip, tooltipPos);
+            const pos = option.position?.startsWith('top') ? 'bottom' : 'top';
+            tooltip($ref, this.art.i18n.get(option.tooltip), pos);
         }
 
         const events = [];

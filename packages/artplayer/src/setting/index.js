@@ -77,8 +77,9 @@ export default class Setting extends Component {
 
             art.on('focus', (event) => {
                 const isControl = includeFromEvent(event, controls.setting);
+                const isControls = includeFromEvent(event, controls.$controls);
                 const isSetting = includeFromEvent(event, this.$parent);
-                if (this.show && !isControl && !isSetting) {
+                if (this.show && !isControl && !isControls && !isSetting) {
                     this.show = false;
                     this.render();
                 }
@@ -184,6 +185,12 @@ export default class Setting extends Component {
             }
         });
         return result;
+    }
+
+    open(name = '') {
+        const item = name ? this.find(name) : null;
+        this.show = true;
+        this.render(item?.selector?.length ? item.selector : this.option);
     }
 
     resize() {

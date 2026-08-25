@@ -179,6 +179,7 @@ declare class Artplayer extends Player {
         option: SettingOption[];
         updateStyle(width?: number): void;
         find(name: string): SettingOption;
+        open(name?: string): void;
         add(setting: Setting): SettingOption[];
         update(settings: Setting): SettingOption[];
         remove(name: string): SettingOption[];

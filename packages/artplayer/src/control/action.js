@@ -12,17 +12,26 @@ const icons = {
 export default function action(option) {
     return (art) => ({
         ...option,
-        tooltip: art.i18n.get(option.tooltip),
+        tooltip: option.tooltip,
         mounted: ($control) => {
             append($control, icons[option.name]);
         },
-        click: () => {
+        click(_, event) {
+            const shifted = !!(event?.shiftKey || event?.getModifierState?.('Shift') || window.event?.shiftKey);
             switch (option.name) {
                 case 'timestamp':
-                    art.captureTimestamp();
+                    if (shifted) {
+                        art.adjust.open('timestamp');
+                    } else {
+                        art.captureTimestamp();
+                    }
                     break;
                 case 'loopSegment':
-                    art.captureLoopSegment();
+                    if (shifted) {
+                        art.adjust.open('loop');
+                    } else {
+                        art.captureLoopSegment();
+                    }
                     break;
                 case 'mediaNotes':
                     art.emitAction('mediaNotes');

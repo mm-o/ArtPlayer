@@ -188,6 +188,11 @@ export type Option = {
     subtitleOffset?: boolean;
 
     /**
+     * Whether to enable player timestamp offset
+     */
+    timestampOffset?: boolean;
+
+    /**
      * Whether to enable player mini progress bar
      */
     miniProgressBar?: boolean;

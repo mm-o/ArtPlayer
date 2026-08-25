@@ -38,6 +38,7 @@ export type Events = {
     hotkey: [event: Event];
     destroy: [];
     subtitleOffset: [offset: number];
+    timestampOffset: [offset: number];
     subtitleBeforeUpdate: [cue: VTTCue];
     subtitleAfterUpdate: [cue: VTTCue];
     subtitleLoad: [cues: VTTCue[], option: Subtitle];

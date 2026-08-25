@@ -57,6 +57,7 @@ export default class Template {
             <div class="art-notice">
               <div class="art-notice-inner"></div>
             </div>
+            <div class="art-adjusts"></div>
             <div class="art-settings"></div>
             <div class="art-playlist"></div>
             <div class="art-info">
@@ -127,6 +128,7 @@ export default class Template {
         this.$loading = this.query('.art-loading');
         this.$notice = this.query('.art-notice');
         this.$noticeInner = this.query('.art-notice-inner');
+        this.$adjusts = this.query('.art-adjusts');
         this.$mask = this.query('.art-mask');
         this.$state = this.query('.art-state');
         this.$setting = this.query('.art-settings');
