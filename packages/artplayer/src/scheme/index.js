@@ -111,6 +111,7 @@ export default {
         width: n,
         height: n,
         scale: n,
+        map: `?[${n}]`,
     },
     subtitle: {
         url: s,

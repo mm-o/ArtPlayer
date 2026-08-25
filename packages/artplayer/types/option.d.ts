@@ -44,6 +44,11 @@ export type Thumbnails = {
      * The thumbnail scale
      */
     scale?: number;
+
+    /**
+     * The thumbnail time map
+     */
+    map?: number[];
 };
 
 export type Option = {

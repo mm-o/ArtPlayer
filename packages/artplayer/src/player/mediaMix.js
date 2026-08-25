@@ -65,6 +65,7 @@ export default function mediaMix(art) {
     let subtitleTracks = [];
     let danmaku = [];
     let audioTracks = [];
+    let currentMediaToken = 0;
 
     def(art, 'currentMedia', {
         get() {
@@ -169,7 +170,11 @@ export default function mediaMix(art) {
         async value(input) {
             const media = normalizeMedia(input);
             currentMedia = media;
+            const mediaToken = ++currentMediaToken;
 
+            if (typeof art.thumbnails !== 'undefined') {
+                art.thumbnails = null;
+            }
             if (media.title) art.title = media.title;
             if (media.poster !== undefined) art.poster = media.poster;
             if (media.type) art.type = media.type;
@@ -191,6 +196,15 @@ export default function mediaMix(art) {
 
             if (typeof art.play === 'function') {
                 await art.play();
+            }
+
+            if (typeof media.getThumbnails === 'function' && mediaToken === currentMediaToken) {
+                Promise.resolve(media.getThumbnails(media, art))
+                    .then((thumbnails) => {
+                        if (mediaToken !== currentMediaToken || !thumbnails) return;
+                        art.thumbnails = thumbnails;
+                    })
+                    .catch(() => {});
             }
 
             return media;

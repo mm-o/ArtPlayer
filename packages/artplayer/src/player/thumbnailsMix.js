@@ -1,5 +1,20 @@
 import { def, setStyle, isMobile, loadImg } from '../utils';
 
+function findThumbnailIndex(map, time) {
+    if (!Array.isArray(map) || !map.length) return -1;
+    let left = 0;
+    let right = map.length - 1;
+    while (left <= right) {
+        const mid = (left + right) >> 1;
+        if (Number(map[mid]) <= time) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    return Math.max(0, Math.min(map.length - 1, right));
+}
+
 export default function thumbnailsMix(art) {
     const {
         events,
@@ -19,17 +34,19 @@ export default function thumbnailsMix(art) {
         image = null;
         loading = false;
         isLoad = false;
+        setStyle(art.controls?.thumbnails, 'display', 'none');
     }
 
     function showThumbnails(posWidth) {
         const $thumbnails = art.controls?.thumbnails;
         if (!$thumbnails) return;
 
-        const { number, column, width, height, scale } = option.thumbnails;
+        const { number, column, width, height, scale, map } = option.thumbnails;
         const width2 = width * scale || image.naturalWidth / column;
         const height2 = height * scale || width2 / ($video.videoWidth / $video.videoHeight);
-        const perWidth = $progress.clientWidth / number;
-        const perIndex = Math.floor(posWidth / perWidth);
+        const perIndex = Array.isArray(map) && map.length
+            ? findThumbnailIndex(map, ($video.duration || 0) * (posWidth / $progress.clientWidth))
+            : Math.floor(posWidth / ($progress.clientWidth / number));
         const yIndex = Math.ceil(perIndex / column) - 1;
         const xIndex = perIndex % column || column - 1;
         setStyle($thumbnails, 'backgroundImage', `url(${image.src})`);
@@ -96,10 +113,20 @@ export default function thumbnailsMix(art) {
             return art.option.thumbnails;
         },
         set(thumbnails) {
-            if (thumbnails.url && !art.option.isLive) {
-                art.option.thumbnails = thumbnails;
+            if (!thumbnails?.url || art.option.isLive) {
+                art.option.thumbnails = {
+                    url: '',
+                    number: 0,
+                    column: 1,
+                    width: 0,
+                    height: 0,
+                    scale: 1,
+                };
                 reset();
+                return;
             }
+            art.option.thumbnails = thumbnails;
+            reset();
         },
     });
 }
