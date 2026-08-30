@@ -204,12 +204,22 @@ type Result = {
     /**
      * 发送一条实时弹幕
      */
-    emit: (danmu: Danmu) => Result;
+    emit: (danmu: Danmu) => Promise<Result>;
 
     /**
      * 重载弹幕源，或者切换新弹幕
      */
     load: (danmuku?: Danmuku) => Promise<Result>;
+
+    /**
+     * 替换全部弹幕
+     */
+    replace: (danmuku?: Danmuku) => Promise<Result>;
+
+    /**
+     * 清空弹幕并取消正在加载的弹幕源
+     */
+    clear: () => Result;
 
     /**
      * 实时改变弹幕配置

@@ -33,6 +33,9 @@ export type Events = {
     mask: [state: boolean];
     subtitle: [state: boolean];
     'subtitle:config': [config: Record<string, any>];
+    'danmaku:change': [danmaku: import('./media').ArtplayerMediaDanmakuItem[]];
+    'danmaku:add': [danmaku: import('./media').ArtplayerMediaDanmakuItem[]];
+    'danmaku:config': [config: Record<string, any>];
     contextmenu: [state: boolean];
     control: [state: boolean];
     setting: [state: boolean];

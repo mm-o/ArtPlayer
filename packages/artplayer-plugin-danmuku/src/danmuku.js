@@ -17,6 +17,7 @@ export default class Danmuku {
         this.isHide = false; // 是否隐藏
         this.timer = null; // 定时器
         this.index = 0; // 弹幕索引
+        this.loadId = 0;
 
         // 格式化后的配置项
         this.option = Danmuku.option;
@@ -264,6 +265,7 @@ export default class Danmuku {
     // 加载弹幕
     async load(danmuku) {
         const { errorHandle } = this.utils;
+        const loadId = ++this.loadId;
 
         let danmus = [];
         const target = danmuku || this.option.danmuku;
@@ -280,18 +282,16 @@ export default class Danmuku {
             }
 
             errorHandle(Array.isArray(danmus), 'Danmuku need return an array as result');
+            if (loadId !== this.loadId) return this;
 
             // 假如没有传入弹幕参数，则清空弹幕，否则追加弹幕
             if (danmuku === undefined) {
-                this.reset(); // 重置弹幕
-                this.queue = []; // 清空弹幕队列
-                this.states = { wait: [], ready: [], emit: [], stop: [] }; // 清空弹幕状态池
-                this.$refs = []; // 清空弹幕DOM节点池
-                this.$danmuku.innerText = ''; // 清空弹幕层
+                this.clear(false);
             }
 
             // 逐个验证原始弹幕并转换到弹幕队列
             for (let index = 0; index < danmus.length; index++) {
+                if (loadId !== this.loadId) return this;
                 const danmu = danmus[index];
                 await this.emit(danmu);
             }
@@ -302,6 +302,22 @@ export default class Danmuku {
             throw error;
         }
 
+        return this;
+    }
+
+    replace(danmuku = []) {
+        this.option.danmuku = danmuku;
+        return this.load();
+    }
+
+    clear(cancel = true) {
+        if (cancel) this.loadId += 1;
+        if (cancel) this.option.danmuku = [];
+        this.reset();
+        this.queue = [];
+        this.states = { wait: [], ready: [], emit: [], stop: [] };
+        this.$refs = [];
+        this.$danmuku.innerText = '';
         return this;
     }
 

@@ -27,7 +27,7 @@ export type ArtplayerMediaSubtitleTrack = Subtitle & {
 
 export type ArtplayerMediaDanmakuItem = {
     time?: number;
-    text?: string;
+    text: string;
     mode?: number;
     color?: string;
     [key: string]: any;
@@ -105,7 +105,7 @@ export type ArtplayerMedia = {
     quality?: quality[];
     qualityLoader?: () => Promise<quality[]>;
     subtitles?: ArtplayerMediaSubtitleTrack[];
-    danmaku?: ArtplayerMediaDanmakuItem[] | Record<string, any>;
+    danmaku?: ArtplayerMediaDanmakuItem[];
     chapters?: ArtplayerMediaChapter[] | string | null;
     thumbnails?: Thumbnails | string;
     annotations?: object | string;

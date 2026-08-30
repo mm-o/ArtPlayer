@@ -65,6 +65,10 @@ export type Template = {
     readonly $poster: HTMLDivElement;
     readonly $subtitle: HTMLDivElement;
     readonly $danmuku: HTMLDivElement;
+    readonly $topbar: HTMLDivElement;
+    readonly $topbarLeft: HTMLDivElement;
+    readonly $topbarTitle: HTMLDivElement;
+    readonly $topbarRight: HTMLDivElement;
     readonly $bottom: HTMLDivElement;
     readonly $progress: HTMLDivElement;
     readonly $controls: HTMLDivElement;
@@ -80,6 +84,7 @@ export type Template = {
     readonly $playlist: HTMLDivElement;
     readonly $info: HTMLDivElement;
     readonly $infoPanel: HTMLDivElement;
+    readonly $infoMedia: HTMLDivElement;
     readonly $infoClose: HTMLDivElement;
     readonly $contextmenu: HTMLDivElement;
     readonly $mini: HTMLDivElement;
@@ -95,6 +100,18 @@ export type Subtitle = {
      * The subtitle name
      */
     name?: string;
+
+    /** Initially active subtitle tracks. */
+    activeTracks?: Array<string | Subtitle>;
+
+    /** Preferred subtitle language. */
+    defaultLang?: string;
+
+    /** Maximum number of simultaneous subtitle tracks. */
+    maxTracks?: number;
+
+    /** Runtime subtitle display configuration. */
+    config?: Record<string, any>;
 
     /**
      * The subtitle type
@@ -120,6 +137,20 @@ export type Subtitle = {
      * Change the vtt text
      */
     onVttLoad?(vtt: string): string;
+
+    /**
+     * Load subtitle resource dynamically.
+     */
+    load?(
+        option: Subtitle,
+        art: any,
+    ):
+        | Promise<string | Blob | File | ArrayBuffer | { url?: string; type?: string } | string>
+        | string
+        | Blob
+        | File
+        | ArrayBuffer
+        | { url?: string; type?: string };
 };
 
 
@@ -250,6 +281,9 @@ export type LoopSegment = { start: number; end: number };
 export type ActionDetail = {
     type: ActionType;
     currentTime: number;
+    displayTime?: number;
+    displayTimeText?: string;
+    timestampOffset?: number;
     duration: number;
     media: ArtplayerMedia | null;
     loopSegment: LoopSegment | null;
@@ -310,6 +344,8 @@ export declare class Player {
     set theme(theme: string);
     get subtitleOffset(): number;
     set subtitleOffset(time: number);
+    get timestampOffset(): number;
+    set timestampOffset(time: number);
     set switch(url: string);
     get quality(): quality[];
     set quality(quality: quality[]);
@@ -318,7 +354,8 @@ export declare class Player {
     set thumbnails(thumbnails: Thumbnails);
     readonly currentMedia: ArtplayerMedia | null;
     readonly subtitleTracks: ArtplayerMediaSubtitleTrack[];
-    readonly danmaku: ArtplayerMediaDanmakuItem[] | Record<string, any>;
+    readonly activeSubtitleTracks: ArtplayerMediaSubtitleTrack[];
+    readonly danmaku: ArtplayerMediaDanmakuItem[];
     readonly audioTracks: ArtplayerMediaAudioTrack[];
     readonly loopSegment: LoopSegment | null;
     readonly playlist: ArtplayerPlaylist & { items: ArtplayerMedia[] };
@@ -329,17 +366,26 @@ export declare class Player {
     getCurrentMedia(): ArtplayerMedia | null;
     playMedia(media: ArtplayerMedia | string): Promise<ArtplayerMedia>;
     updateQuality(quality?: quality[]): quality[];
-    setSubtitles(tracks?: ArtplayerMediaSubtitleTrack[]): Promise<ArtplayerMediaSubtitleTrack | null>;
+    getSubtitleConfig(): Record<string, any>;
+    setSubtitleConfig(config?: Record<string, any>): Record<string, any>;
+    setSubtitles(tracks?: ArtplayerMediaSubtitleTrack[]): Promise<ArtplayerMediaSubtitleTrack[] | null>;
+    selectSubtitleTracks(tracks?: ArtplayerMediaSubtitleTrack[]): Promise<ArtplayerMediaSubtitleTrack[] | null>;
     selectSubtitle(
         track?: ArtplayerMediaSubtitleTrack | null,
         tracks?: ArtplayerMediaSubtitleTrack[],
-    ): Promise<ArtplayerMediaSubtitleTrack | null>;
-    setDanmaku(danmaku?: ArtplayerMediaDanmakuItem[] | Record<string, any>): ArtplayerMediaDanmakuItem[] | Record<string, any>;
+    ): Promise<ArtplayerMediaSubtitleTrack[] | null>;
+    getDanmaku(): ArtplayerMediaDanmakuItem[];
+    setDanmaku(danmaku?: ArtplayerMediaDanmakuItem[]): Promise<ArtplayerMediaDanmakuItem[]>;
+    addDanmaku(danmaku?: ArtplayerMediaDanmakuItem[]): Promise<ArtplayerMediaDanmakuItem[]>;
+    emitDanmaku(danmaku: ArtplayerMediaDanmakuItem): Promise<ArtplayerMediaDanmakuItem[]>;
+    clearDanmaku(): ArtplayerMediaDanmakuItem[];
+    getDanmakuConfig(): Record<string, any>;
+    setDanmakuConfig(config?: Record<string, any>): Record<string, any>;
     setAudioTracks(tracks?: ArtplayerMediaAudioTrack[]): ArtplayerMediaAudioTrack[];
     emitAction(type: ActionType, detail?: Record<string, any>): ActionDetail;
     captureTimestamp(detail?: Record<string, any>): ActionDetail;
     captureLoopSegment(): ActionDetail | { start: number; end: null };
-    setLoopSegment(start: number, end: number): boolean;
+    setLoopSegment(start: number, end: number, seek?: boolean): boolean;
     clearLoopSegment(): null;
     setPlaylist(playlist?: ArtplayerPlaylist, currentUrl?: string): ArtplayerPlaylist & { items: ArtplayerMedia[] };
     renderPlaylist(page?: 'playlist' | 'favorites' | 'history'): void;
@@ -347,20 +393,10 @@ export declare class Player {
     playlistPlay(id?: string): Promise<ArtplayerMedia | null>;
     playlistNext(): Promise<ArtplayerMedia | null>;
     playlistPrev(): Promise<ArtplayerMedia | null>;
-    playlistAdd(item: ArtplayerMedia, groupId?: string): ArtplayerMedia | null;
-    playlistAddCurrent(groupId?: string): ArtplayerMedia | null;
-    playlistAddUrl(url: string, title?: string): ArtplayerMedia | null;
-    playlistAddFile(file: File): ArtplayerMedia | null;
-    playlistUpdate(id: string, patch: Partial<ArtplayerMedia>): ArtplayerMedia | null;
-    playlistRemove(id: string): ArtplayerMedia | null;
     playlistGetItem(id: string): ArtplayerMedia | null;
     playlistGetNode(id: string): ArtplayerPlaylistNode | null;
     playlistExpandNode(id: string, expanded?: boolean): Promise<ArtplayerPlaylistNode | null>;
     playlistToggleNode(id: string): Promise<ArtplayerPlaylistNode | null>;
-    playlistAddNode(node: ArtplayerPlaylistNode, parentId?: string): ArtplayerPlaylistNode | null;
-    playlistCreateFolder(name: string, parentId?: string): ArtplayerPlaylistNode | null;
-    playlistRemoveNode(id: string): ArtplayerPlaylistNode | null;
-    playlistUpdateNode(id: string, patch: Partial<ArtplayerPlaylistNode>): ArtplayerPlaylistNode | null;
     togglePlaylistFavorite(id: string): Promise<boolean>;
     clearPlaylistHistory(): Promise<ArtplayerMedia[]>;
     pause(): void;
@@ -425,6 +461,11 @@ export type Thumbnails = {
      * The thumbnail scale
      */
     scale?: number;
+
+    /**
+     * The thumbnail time map
+     */
+    map?: number[];
 };
 
 export type Option = {
@@ -564,9 +605,9 @@ export type Option = {
     fullscreenWeb?: boolean;
 
     /**
-     * Whether to enable player subtitle offset
+     * Whether to enable player timestamp offset
      */
-    subtitleOffset?: boolean;
+    timestampOffset?: boolean;
 
     /**
      * Whether to enable player mini progress bar
@@ -731,7 +772,7 @@ export type ArtplayerMediaSubtitleTrack = Subtitle & {
 
 export type ArtplayerMediaDanmakuItem = {
     time?: number;
-    text?: string;
+    text: string;
     mode?: number;
     color?: string;
     [key: string]: any;
@@ -809,7 +850,7 @@ export type ArtplayerMedia = {
     quality?: quality[];
     qualityLoader?: () => Promise<quality[]>;
     subtitles?: ArtplayerMediaSubtitleTrack[];
-    danmaku?: ArtplayerMediaDanmakuItem[] | Record<string, any>;
+    danmaku?: ArtplayerMediaDanmakuItem[];
     chapters?: ArtplayerMediaChapter[] | string | null;
     thumbnails?: Thumbnails | string;
     annotations?: object | string;
@@ -910,13 +951,6 @@ type I18nValue = {
     History: string;
     Clear: string;
     Empty: string;
-    Remove: string;
-    'New Folder': string;
-    'Add File': string;
-    'Add Link': string;
-    Add: string;
-    Name: string;
-    'Media Link': string;
     Timestamp: string;
     'Loop Segment': string;
     'Media Notes': string;
@@ -959,12 +993,17 @@ export type Events = {
     loading: [state: boolean];
     mask: [state: boolean];
     subtitle: [state: boolean];
+    'subtitle:config': [config: Record<string, any>];
+    'danmaku:change': [danmaku: import('./media').ArtplayerMediaDanmakuItem[]];
+    'danmaku:add': [danmaku: import('./media').ArtplayerMediaDanmakuItem[]];
+    'danmaku:config': [config: Record<string, any>];
     contextmenu: [state: boolean];
     control: [state: boolean];
     setting: [state: boolean];
     hotkey: [event: Event];
     destroy: [];
     subtitleOffset: [offset: number];
+    timestampOffset: [offset: number];
     subtitleBeforeUpdate: [cue: VTTCue];
     subtitleAfterUpdate: [cue: VTTCue];
     subtitleLoad: [cues: VTTCue[], option: Subtitle];
@@ -1235,7 +1274,7 @@ export type ComponentOption = {
     /**
      * Component position, use in controls
      */
-    position?: 'top' | 'left' | 'right' | (string & Record<never, never>);
+    position?: 'top' | 'top-left' | 'top-right' | 'left' | 'right' | (string & Record<never, never>);
 
     /**
      * Custom selector list, use in controls
@@ -1259,7 +1298,16 @@ export type ComponentOption = {
 
 
 
-
+import {
+    ArtplayerMedia,
+    ArtplayerMediaAudioTrack,
+    ArtplayerMediaChapter,
+    ArtplayerMediaDanmakuItem,
+    ArtplayerMediaSource,
+    ArtplayerMediaSubtitleTrack,
+    ArtplayerPlaylist,
+    ArtplayerPlaylistNode,
+} from './media';
 
 export = Artplayer;
 export as namespace Artplayer;
@@ -1406,10 +1454,12 @@ declare class Artplayer extends Player {
         get url(): string;
         set url(url: string);
         get textTrack(): TextTrack;
+        get textTracks(): TextTrack[];
         get activeCues(): VTTCue[];
         get cues(): VTTCue[];
         style(name: string | Partial<CSSStyleDeclaration>, value?: string): void;
         switch(url: string, option?: Subtitle): Promise<string>;
+        add(url: string, option?: Subtitle): Promise<string>;
         clear(): void;
     } & Component;
 
@@ -1429,6 +1479,7 @@ declare class Artplayer extends Player {
         option: SettingOption[];
         updateStyle(width?: number): void;
         find(name: string): SettingOption;
+        open(name?: string): void;
         add(setting: Setting): SettingOption[];
         update(settings: Setting): SettingOption[];
         remove(name: string): SettingOption[];
