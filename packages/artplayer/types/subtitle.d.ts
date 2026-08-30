@@ -9,6 +9,18 @@ export type Subtitle = {
      */
     name?: string;
 
+    /** Initially active subtitle tracks. */
+    activeTracks?: Array<string | Subtitle>;
+
+    /** Preferred subtitle language. */
+    defaultLang?: string;
+
+    /** Maximum number of simultaneous subtitle tracks. */
+    maxTracks?: number;
+
+    /** Runtime subtitle display configuration. */
+    config?: Record<string, any>;
+
     /**
      * The subtitle type
      */
@@ -33,4 +45,18 @@ export type Subtitle = {
      * Change the vtt text
      */
     onVttLoad?(vtt: string): string;
+
+    /**
+     * Load subtitle resource dynamically.
+     */
+    load?(
+        option: Subtitle,
+        art: any,
+    ):
+        | Promise<string | Blob | File | ArrayBuffer | { url?: string; type?: string } | string>
+        | string
+        | Blob
+        | File
+        | ArrayBuffer
+        | { url?: string; type?: string };
 };

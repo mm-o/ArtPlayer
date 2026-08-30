@@ -92,6 +92,7 @@ export declare class Player {
     set thumbnails(thumbnails: Thumbnails);
     readonly currentMedia: ArtplayerMedia | null;
     readonly subtitleTracks: ArtplayerMediaSubtitleTrack[];
+    readonly activeSubtitleTracks: ArtplayerMediaSubtitleTrack[];
     readonly danmaku: ArtplayerMediaDanmakuItem[] | Record<string, any>;
     readonly audioTracks: ArtplayerMediaAudioTrack[];
     readonly loopSegment: LoopSegment | null;
@@ -103,12 +104,17 @@ export declare class Player {
     getCurrentMedia(): ArtplayerMedia | null;
     playMedia(media: ArtplayerMedia | string): Promise<ArtplayerMedia>;
     updateQuality(quality?: quality[]): quality[];
-    setSubtitles(tracks?: ArtplayerMediaSubtitleTrack[]): Promise<ArtplayerMediaSubtitleTrack | null>;
+    getSubtitleConfig(): Record<string, any>;
+    setSubtitleConfig(config?: Record<string, any>): Record<string, any>;
+    setSubtitles(tracks?: ArtplayerMediaSubtitleTrack[]): Promise<ArtplayerMediaSubtitleTrack[] | null>;
+    selectSubtitleTracks(tracks?: ArtplayerMediaSubtitleTrack[]): Promise<ArtplayerMediaSubtitleTrack[] | null>;
     selectSubtitle(
         track?: ArtplayerMediaSubtitleTrack | null,
         tracks?: ArtplayerMediaSubtitleTrack[],
-    ): Promise<ArtplayerMediaSubtitleTrack | null>;
-    setDanmaku(danmaku?: ArtplayerMediaDanmakuItem[] | Record<string, any>): ArtplayerMediaDanmakuItem[] | Record<string, any>;
+    ): Promise<ArtplayerMediaSubtitleTrack[] | null>;
+    setDanmaku(
+        danmaku?: ArtplayerMediaDanmakuItem[] | Record<string, any>,
+    ): ArtplayerMediaDanmakuItem[] | Record<string, any>;
     setAudioTracks(tracks?: ArtplayerMediaAudioTrack[]): ArtplayerMediaAudioTrack[];
     emitAction(type: ActionType, detail?: Record<string, any>): ActionDetail;
     captureTimestamp(detail?: Record<string, any>): ActionDetail;

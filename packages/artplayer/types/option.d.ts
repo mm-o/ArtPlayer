@@ -188,11 +188,6 @@ export type Option = {
     fullscreenWeb?: boolean;
 
     /**
-     * Whether to enable player subtitle offset
-     */
-    subtitleOffset?: boolean;
-
-    /**
      * Whether to enable player timestamp offset
      */
     timestampOffset?: boolean;

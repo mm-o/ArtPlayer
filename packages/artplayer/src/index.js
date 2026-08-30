@@ -55,6 +55,7 @@ export default class Artplayer extends Emitter {
         this.controls = new Control(this);
         this.contextmenu = new Contextmenu(this);
         this.subtitle = new Subtitle(this);
+        this.installSubtitlePanel();
         this.info = new Info(this);
         this.loading = new Loading(this);
         this.hotkey = new Hotkey(this);
@@ -149,7 +150,6 @@ export default class Artplayer extends Emitter {
             backdrop: true,
             fullscreen: false,
             fullscreenWeb: false,
-            subtitleOffset: false,
             timestampOffset: false,
             miniProgressBar: false,
             useSSR: false,
@@ -180,6 +180,10 @@ export default class Artplayer extends Emitter {
                 type: '',
                 style: {},
                 name: '',
+                activeTracks: [],
+                defaultLang: '',
+                maxTracks: 2,
+                config: {},
                 escape: true,
                 encoding: 'utf-8',
                 onVttLoad: (vtt) => vtt,

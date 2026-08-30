@@ -32,6 +32,7 @@ export type Events = {
     loading: [state: boolean];
     mask: [state: boolean];
     subtitle: [state: boolean];
+    'subtitle:config': [config: Record<string, any>];
     contextmenu: [state: boolean];
     control: [state: boolean];
     setting: [state: boolean];

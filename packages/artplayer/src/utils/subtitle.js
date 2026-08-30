@@ -32,6 +32,33 @@ export function vttToBlob(vttText) {
     );
 }
 
+function formatTime(value) {
+    const time = Math.max(0, Number(value) || 0);
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
+    const seconds = Math.floor(time % 60);
+    const milliseconds = Math.floor((time % 1) * 1000);
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+}
+
+export function jsonToVtt(value) {
+    try {
+        const data = JSON.parse(value);
+        const body = Array.isArray(data) ? data : data?.body || data?.data?.body || [];
+        if (!Array.isArray(body)) return '';
+        const cues = body.flatMap((item, index) => {
+            const text = String(item.content || item.text || item.body || '').trim();
+            if (!text) return [];
+            const start = Number(item.from ?? item.start ?? item.time ?? 0) || 0;
+            const end = Number(item.to ?? item.end ?? item.endTime ?? start + 5) || start + 5;
+            return `${index + 1}\n${formatTime(start)} --> ${formatTime(end)}\n${text}\n`;
+        });
+        return cues.length ? `WEBVTT\n\n${cues.join('\n')}` : '';
+    } catch {
+        return '';
+    }
+}
+
 export function assToVtt(ass) {
     const reAss = new RegExp(
         'Dialogue:\\s\\d,' +

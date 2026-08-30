@@ -9,7 +9,16 @@ import { Template } from './template';
 import { I18n } from './i18n';
 import { Setting, SettingOption } from './setting';
 import { Component } from './component';
-import { ArtplayerMedia, ArtplayerMediaAudioTrack, ArtplayerMediaChapter, ArtplayerMediaDanmakuItem, ArtplayerMediaSource, ArtplayerMediaSubtitleTrack, ArtplayerPlaylist, ArtplayerPlaylistNode } from './media';
+import {
+    ArtplayerMedia,
+    ArtplayerMediaAudioTrack,
+    ArtplayerMediaChapter,
+    ArtplayerMediaDanmakuItem,
+    ArtplayerMediaSource,
+    ArtplayerMediaSubtitleTrack,
+    ArtplayerPlaylist,
+    ArtplayerPlaylistNode,
+} from './media';
 
 export = Artplayer;
 export as namespace Artplayer;
@@ -156,10 +165,12 @@ declare class Artplayer extends Player {
         get url(): string;
         set url(url: string);
         get textTrack(): TextTrack;
+        get textTracks(): TextTrack[];
         get activeCues(): VTTCue[];
         get cues(): VTTCue[];
         style(name: string | Partial<CSSStyleDeclaration>, value?: string): void;
         switch(url: string, option?: Subtitle): Promise<string>;
+        add(url: string, option?: Subtitle): Promise<string>;
         clear(): void;
     } & Component;
 

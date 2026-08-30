@@ -1,7 +1,6 @@
 import flip from './flip';
 import aspectRatio from './aspectRatio';
 import playbackRate from './playbackRate';
-import subtitleOffset from './subtitleOffset';
 import Component from '../utils/component';
 import {
     def,
@@ -103,10 +102,6 @@ export default class Setting extends Component {
 
         if (option.flip) {
             result.push(flip(this.art));
-        }
-
-        if (option.subtitleOffset) {
-            result.push(subtitleOffset(this.art));
         }
 
         if (option.setting && this.art.controls?.pinItems?.length) {
@@ -505,6 +500,9 @@ export default class Setting extends Component {
                             this.render(item.selector);
                         } else {
                             this.check(item);
+                            if (item.onSelect) {
+                                item.tooltip = await item.onSelect.call(this.art, item, $item, event);
+                            }
                             if (item.$parent.onSelect) {
                                 item.$parent.tooltip = await item.$parent.onSelect.call(this.art, item, $item, event);
                             }
