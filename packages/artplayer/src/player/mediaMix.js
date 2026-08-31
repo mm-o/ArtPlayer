@@ -123,8 +123,7 @@ function installSubtitlePanel(art) {
         name: 'subtitle',
         position: 'right',
         index: 11,
-        style: { marginRight: '10px' },
-        html: icons.config,
+        html: icons.subtitle,
         click: () => {
             if (!art.subtitleTracks.length) art.notice.show = i18n.get('No Subtitle');
         },

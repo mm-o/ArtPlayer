@@ -26,6 +26,7 @@ import flip from 'bundle-text:./flip.svg';
 import error from 'bundle-text:./error.svg';
 import close from 'bundle-text:./close.svg';
 import airplay from 'bundle-text:./airplay.svg';
+import subtitle from 'bundle-text:./subtitle.svg';
 
 export default class Icons {
     constructor(art) {
@@ -57,6 +58,7 @@ export default class Icons {
             error,
             close,
             airplay,
+            subtitle,
             ...art.option.icons,
         };
 

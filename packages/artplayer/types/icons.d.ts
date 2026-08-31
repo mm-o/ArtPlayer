@@ -26,5 +26,6 @@ export type Icons = {
     readonly error: HTMLDivElement;
     readonly close: HTMLDivElement;
     readonly airplay: HTMLDivElement;
+    readonly subtitle: HTMLDivElement;
     readonly [key: string]: HTMLDivElement;
 };
