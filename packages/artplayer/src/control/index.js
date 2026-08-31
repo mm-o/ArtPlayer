@@ -294,17 +294,26 @@ export default class Control extends Component {
         return value;
     }
 
+    removePinned(name) {
+        this.pinOptions.delete(name);
+        this.pinItems = this.pinItems.filter((item) => item.name !== name);
+        if (this.cache.has(name)) this.remove(name);
+    }
+
     addPinned(name, html, getOption) {
         const option = typeof getOption === 'function' ? getOption(this.art) : getOption;
         if (!option?.name) return this.add(option);
 
         this.pinOptions.set(option.name, option);
-        this.pinItems.push({
-            name: option.name,
-            html: this.art.i18n.get(html || option.tooltip || option.name),
-        });
+        const item = this.pinItems.find((item) => item.name === option.name);
+        const label = this.art.i18n.get(html || option.tooltip || option.name);
+        if (item) item.html = label;
+        else this.pinItems.push({ name: option.name, html: label });
 
-        if (this.isPinned(option.name)) return this.add(option);
+        if (this.isPinned(option.name)) {
+            if (this.cache.has(option.name)) return this.update(option);
+            return this.add(option);
+        }
         return null;
     }
 

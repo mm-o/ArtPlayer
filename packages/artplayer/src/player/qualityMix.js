@@ -4,13 +4,8 @@ export default function qualityMix(art) {
     let qualities = [];
 
     function removeQuality() {
-        try {
-            art.controls.remove('quality');
-        } catch {}
-
-        try {
-            art.setting.remove('quality');
-        } catch {}
+        art.controls.removePinned('quality');
+        if (art.setting.find('quality')) art.setting.remove('quality');
     }
 
     function updateQuality(quality = []) {
@@ -23,7 +18,7 @@ export default function qualityMix(art) {
         }
 
         const qualityDefault = qualities.find((item) => item.default) || qualities[0];
-        controls.update({
+        controls.addPinned('quality', 'Quality', {
             name: 'quality',
             position: 'right',
             index: 10,

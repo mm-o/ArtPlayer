@@ -62,6 +62,7 @@ export default class Setting {
         this.createEvents();
 
         this.mount(this.option.mount);
+        this.registerControls();
 
         art.on('resize', () => this.resize());
         art.on('fullscreen', (state) => this.onFullscreen(state));
@@ -360,6 +361,32 @@ export default class Setting {
 
         this.art.on('artplayerPluginDanmuku:hide', () => {
             tooltip($toggle, '打开弹幕');
+        });
+    }
+
+    registerControls() {
+        const { controls } = this.art;
+        const { $danmuku, $toggle, $config } = this.template;
+
+        [$toggle, $config].forEach((item) => item.parentNode === $danmuku && $danmuku.removeChild(item));
+
+        controls.addPinned('danmaku', 'Danmaku', {
+            name: 'danmaku',
+            position: 'right',
+            index: 12,
+            mounted: ($control) => {
+                $control.classList.add('artplayer-plugin-danmuku');
+                this.append($control, $toggle);
+            },
+        });
+        controls.addPinned('danmakuConfig', 'Danmaku Settings', {
+            name: 'danmakuConfig',
+            position: 'right',
+            index: 13,
+            mounted: ($control) => {
+                $control.classList.add('artplayer-plugin-danmuku');
+                this.append($control, $config);
+            },
         });
     }
 

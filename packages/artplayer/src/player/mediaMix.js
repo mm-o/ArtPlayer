@@ -119,7 +119,7 @@ function installSubtitlePanel(art) {
         return paint;
     }
 
-    controls.update({
+    controls.addPinned('subtitle', 'Subtitle', {
         name: 'subtitle',
         position: 'right',
         index: 11,
