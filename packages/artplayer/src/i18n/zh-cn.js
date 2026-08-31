@@ -15,6 +15,8 @@
     'Hide Setting': '隐藏设置',
     Progress: '进度条',
     Thumbnails: '缩略图',
+    Time: '时间',
+    Title: '标题',
     Screenshot: '截图',
     'Play Speed': '播放速度',
     'Aspect Ratio': '画面比例',

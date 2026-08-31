@@ -284,6 +284,8 @@ export default class Control extends Component {
 
         const option = this.pinOptions.get(name);
         if (!option) return value;
+        option.onPinned?.(value);
+        if (option.pinOnly) return value;
 
         if (value) {
             if (!this.cache.has(name)) this.add(option);
@@ -310,6 +312,12 @@ export default class Control extends Component {
         const label = this.art.i18n.get(html || option.tooltip || option.name);
         if (item) item.html = label;
         else this.pinItems.push({ name: option.name, html: label });
+        option.onPinned?.(this.isPinned(option.name));
+
+        if (option.pinOnly) {
+            this.art.emit('control:pinItems', this.pinItems);
+            return null;
+        }
 
         if (this.isPinned(option.name)) {
             if (this.cache.has(option.name)) return this.update(option);
@@ -358,6 +366,13 @@ export default class Control extends Component {
             $topbarTitle.innerText = media?.title || media?.name || '';
         };
 
+        this.addPinned('title', 'Title', {
+            name: 'title',
+            pinOnly: true,
+            onPinned: (value) => {
+                $topbarTitle.style.display = value ? '' : 'none';
+            },
+        });
         this.art.on('media:change', update);
         this.art.on('playlist:item', update);
         update();

@@ -199,6 +199,7 @@ export default class Setting extends Component {
 
     open(name = '') {
         const item = name ? this.find(name) : null;
+        this.find('toolbarControls')?.sync?.();
         this.show = true;
         this.render(item?.selector?.length ? item.selector : this.option);
     }
