@@ -161,7 +161,7 @@ function installSubtitlePanel(art) {
                         index,
                     ),
                 );
-                $control.style.display = art.subtitleTracks.length ? '' : 'none';
+                $control.style.display = '';
             };
 
             proxy($checks, 'click', async (event) => {
