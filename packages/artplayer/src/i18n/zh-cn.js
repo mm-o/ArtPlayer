@@ -13,6 +13,8 @@
     Reconnect: '重新连接',
     'Show Setting': '显示设置',
     'Hide Setting': '隐藏设置',
+    Progress: '进度条',
+    Thumbnails: '缩略图',
     Screenshot: '截图',
     'Play Speed': '播放速度',
     'Aspect Ratio': '画面比例',

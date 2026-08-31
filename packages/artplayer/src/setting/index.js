@@ -79,6 +79,7 @@ export default class Setting extends Component {
                     item.selector.filter((child) => !child.$item).forEach((child) => this.creatItem(child));
                 }
                 item.tooltip = `${item.selector.filter((child) => child.switch).length}/${item.selector.length}`;
+                this.resize();
             });
 
             art.on('blur', () => {
