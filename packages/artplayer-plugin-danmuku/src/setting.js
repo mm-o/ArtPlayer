@@ -374,6 +374,11 @@ export default class Setting {
             name: 'danmaku',
             position: 'right',
             index: 12,
+            style: {
+                width: 'var(--art-control-height)',
+                height: 'var(--art-control-height)',
+                gap: 0,
+            },
             mounted: ($control) => {
                 $control.classList.add('artplayer-plugin-danmuku');
                 this.append($control, $toggle);
@@ -383,6 +388,11 @@ export default class Setting {
             name: 'danmakuConfig',
             position: 'right',
             index: 13,
+            style: {
+                width: 'var(--art-control-height)',
+                height: 'var(--art-control-height)',
+                gap: 0,
+            },
             mounted: ($control) => {
                 $control.classList.add('artplayer-plugin-danmuku');
                 this.append($control, $config);
