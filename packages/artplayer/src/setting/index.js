@@ -19,7 +19,8 @@ import {
 
 function toolbarControls(art) {
     const { controls, i18n, icons, constructor } = art;
-    const selector = controls.pinItems.map((item) => {
+    const selector = [];
+    const sync = () => selector.splice(0, selector.length, ...controls.pinItems.map((item) => {
         const pinned = controls.isPinned(item.name);
         return {
             name: `pin-${item.name}`,
@@ -33,7 +34,8 @@ function toolbarControls(art) {
                 return next;
             },
         };
-    });
+    }));
+    sync();
 
     return {
         width: constructor.SETTING_ITEM_WIDTH,
@@ -42,6 +44,7 @@ function toolbarControls(art) {
         tooltip: `${selector.filter((item) => item.switch).length}/${selector.length}`,
         icon: icons.config,
         selector,
+        sync,
     };
 }
 
@@ -66,6 +69,17 @@ export default class Setting extends Component {
         if (option.setting) {
             this.format();
             this.render();
+
+            art.on('control:pinItems', () => {
+                const item = this.find('toolbarControls');
+                if (!item?.sync) return;
+                item.sync();
+                this.format(item.selector, item, this.option);
+                if (this.cache.has(item.selector)) {
+                    item.selector.filter((child) => !child.$item).forEach((child) => this.creatItem(child));
+                }
+                item.tooltip = `${item.selector.filter((child) => child.switch).length}/${item.selector.length}`;
+            });
 
             art.on('blur', () => {
                 if (this.show) {

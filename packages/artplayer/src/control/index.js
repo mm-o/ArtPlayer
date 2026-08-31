@@ -297,6 +297,7 @@ export default class Control extends Component {
     removePinned(name) {
         this.pinOptions.delete(name);
         this.pinItems = this.pinItems.filter((item) => item.name !== name);
+        this.art.emit('control:pinItems', this.pinItems);
         if (this.cache.has(name)) this.remove(name);
     }
 
@@ -312,8 +313,11 @@ export default class Control extends Component {
 
         if (this.isPinned(option.name)) {
             if (this.cache.has(option.name)) return this.update(option);
-            return this.add(option);
+            const result = this.add(option);
+            this.art.emit('control:pinItems', this.pinItems);
+            return result;
         }
+        this.art.emit('control:pinItems', this.pinItems);
         return null;
     }
 
