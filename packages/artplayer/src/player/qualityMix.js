@@ -27,9 +27,6 @@ export default function qualityMix(art) {
             name: 'quality',
             position: 'right',
             index: 10,
-            style: {
-                marginRight: '10px',
-            },
             html: qualityDefault?.html || '',
             selector: qualities,
             async onSelect(item) {
