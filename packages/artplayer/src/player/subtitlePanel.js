@@ -126,10 +126,6 @@ export default function installSubtitlePanel(art) {
                 query('.apd-check', $item).checked = checked;
                 query('span', $item).textContent = label;
             };
-            const createSourceTitle = (label) => {
-                const $title = append($tracks, '<div class="apd-subtitle-source"></div>');
-                $title.textContent = label;
-            };
             const renderTracks = () => {
                 const active = art.activeSubtitleTracks;
                 $tracks.innerHTML = '';
@@ -141,7 +137,7 @@ export default function installSubtitlePanel(art) {
                     groups.get(source).push([track, index]);
                 });
                 groups.forEach((tracks, source) => {
-                    createSourceTitle(i18n.get(SOURCE_LABELS[source] || 'Subtitle'));
+                    append($tracks, '<div class="apd-subtitle-source"></div>').textContent = i18n.get(SOURCE_LABELS[source] || 'Subtitle');
                     tracks.forEach(([track, index]) => createCheck(
                         track.name || track.lang || i18n.get('Subtitle'),
                         active.some((item) => sameSubtitle(item, track)),
@@ -179,8 +175,9 @@ export default function installSubtitlePanel(art) {
                 $panel.style.left = `${left}px`;
                 if (!browser) return;
                 const browserWidth = $browser.getBoundingClientRect().width || panelRect.width;
-                browser.side = browserSide({ left, panel: panelRect.width, browser: browserWidth, player: playerRect.width, padding });
-                $browser.style.left = browser.side === 'left' ? `${left - browserWidth - 8}px` : `${left + panelRect.width + 8}px`;
+                $browser.style.left = browserSide({ left, panel: panelRect.width, browser: browserWidth, player: playerRect.width, padding }) === 'left'
+                    ? `${left - browserWidth - 8}px`
+                    : `${left + panelRect.width + 8}px`;
             };
             const renderBrowser = () => {
                 if (!browser) return;
@@ -238,7 +235,7 @@ export default function installSubtitlePanel(art) {
                 renderBrowser();
             };
             const openBrowser = (provider) => {
-                browser = { provider, trail: [], items: [], selected: new Map(), loading: false, error: '', side: 'right' };
+                browser = { provider, trail: [], items: [], selected: new Map(), loading: false, error: '' };
                 setOpen(true);
                 void loadBrowser(() => provider.browse.roots(art));
             };
@@ -308,7 +305,6 @@ export default function installSubtitlePanel(art) {
                         ? active.filter((item) => !sameSubtitle(item, track))
                         : [...active, track]);
                 }
-                renderTracks();
             });
             proxy($control, 'click', () => {
                 if ($host.classList.contains('apd-subtitle-open')) {

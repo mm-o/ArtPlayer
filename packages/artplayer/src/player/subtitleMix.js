@@ -60,8 +60,9 @@ export default function subtitleMix(art) {
             if ('visible' in value) art.subtitle.show = !!value.visible;
             if ('offset' in value) art.subtitleOffset = value.offset;
             art.subtitle.style(subtitleStyle(config));
-            art.emit('subtitle:config', art.getSubtitleConfig());
-            return art.getSubtitleConfig();
+            const result = art.getSubtitleConfig();
+            art.emit('subtitle:config', result);
+            return result;
         },
     });
     def(art, 'setSubtitles', {
@@ -74,8 +75,9 @@ export default function subtitleMix(art) {
         value(value = [], select = true) {
             const added = uniqueSubtitleTracks(value);
             tracks = uniqueSubtitleTracks([...tracks, ...added]);
+            if (select && added.length) return art.selectSubtitleTracks([...active, ...added]);
             art.emit('subtitle:change', active[0] || null, tracks);
-            return select && added.length ? art.selectSubtitleTracks([...active, ...added]) : added;
+            return added;
         },
     });
     def(art, 'addSubtitleFiles', {
