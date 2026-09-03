@@ -105,7 +105,7 @@ export default function installSubtitlePanel(art) {
             };
             const sliders = {
                 fontSize: createSlider($inner, 'Font Size', 'fontSize', 12, 60, 1, 'px'),
-                bottom: createSlider($inner, 'Subtitle Position', 'bottom', 10, 90, 1, '%'),
+                bottom: createSlider($inner, 'Subtitle Position', 'bottom', 0, 100, 1, '%'),
                 offset: createSlider($inner, 'Subtitle Offset', 'offset', -10, 10, 0.1, 's'),
                 backgroundOpacity: createSlider($inner, 'Background Opacity', 'backgroundOpacity', 0, 100, 5, '%'),
             };
