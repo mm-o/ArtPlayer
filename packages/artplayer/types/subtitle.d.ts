@@ -1,3 +1,14 @@
+export type SubtitleSource = {
+    name: string;
+    select?: boolean;
+    load?: (art: any) => Promise<Subtitle[]> | Subtitle[];
+    browse?: {
+        roots: (art: any) => Promise<any[]> | any[];
+        children: (item: any, art: any) => Promise<any[]> | any[];
+        select: (items: any[], art: any) => Promise<Subtitle[]> | Subtitle[];
+    };
+};
+
 export type Subtitle = {
     /**
      * The subtitle url
@@ -15,11 +26,11 @@ export type Subtitle = {
     /** Preferred subtitle language. */
     defaultLang?: string;
 
-    /** Maximum number of simultaneous subtitle tracks. */
-    maxTracks?: number;
-
     /** Runtime subtitle display configuration. */
     config?: Record<string, any>;
+
+    /** External subtitle providers shown in the subtitle panel. */
+    sources?: SubtitleSource[];
 
     /**
      * The subtitle type

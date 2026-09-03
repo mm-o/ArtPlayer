@@ -123,7 +123,7 @@ export default {
         load: `?${f}`,
         activeTracks: a,
         defaultLang: s,
-        maxTracks: n,
+        sources: a,
         config: o,
     },
     moreVideoAttr: o,

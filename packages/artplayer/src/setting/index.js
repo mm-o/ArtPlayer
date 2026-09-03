@@ -137,6 +137,7 @@ export default class Setting extends Component {
     }
 
     check(target) {
+        if (!target) return false;
         target.$parent.tooltip = target.html;
         this.traverse((item) => {
             item.default = item === target;
@@ -145,6 +146,7 @@ export default class Setting extends Component {
             }
         }, target.$option);
         this.render(target.$parents);
+        return true;
     }
 
     format(option = this.option, parent, parents, names = []) {

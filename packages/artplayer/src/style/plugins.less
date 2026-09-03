@@ -55,17 +55,20 @@
                 bottom: 24px;
                 left: 0;
                 width: 320px;
+                max-width: calc(100vw - var(--art-padding) * 2);
+                box-sizing: border-box;
+                z-index: 121;
                 padding: 10px;
                 opacity: 0;
                 pointer-events: none;
 
                 .apd-config-panel-inner {
                     width: 100%;
-                    max-height: var(--art-settings-max-height);
-                    overflow: auto;
+                    overflow: visible;
                     border-radius: 3px;
                     background-color: rgba(0, 0, 0, 0.85);
                     padding: 10px;
+
                 }
             }
         }
@@ -73,6 +76,19 @@
         &.apd-config:hover .apd-config-panel {
             opacity: 100;
             pointer-events: all;
+        }
+
+        &.apd-subtitle-click-open .apd-config-panel {
+            opacity: 100;
+            pointer-events: all;
+        }
+
+        &.apd-subtitle-root {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 0;
         }
 
         .apd-config-other {
@@ -93,11 +109,169 @@
                 }
             }
 
+            .apd-subtitle-source {
+                flex-basis: 100%;
+                margin-top: 4px;
+                color: var(--art-font-color);
+                opacity: 0.6;
+            }
+
             .apd-check {
                 width: 16px;
                 height: 16px;
                 margin: 0;
                 accent-color: #00a1d6;
+            }
+        }
+
+        .apd-subtitle-sources {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+
+            button {
+                flex: 1;
+                height: 28px;
+                color: inherit;
+                cursor: pointer;
+                border: 1px solid rgba(255, 255, 255, 0.25);
+                border-radius: 3px;
+                background: rgba(255, 255, 255, 0.08);
+
+                &:hover {
+                    color: #00a1d6;
+                    border-color: #00a1d6;
+                }
+            }
+        }
+
+        .apd-subtitle-sources.apd-subtitle-browser {
+            position: absolute;
+            bottom: 0;
+            left: calc(100% + 8px);
+            display: flex;
+            flex-direction: column;
+            width: 320px;
+            box-sizing: border-box;
+            min-width: 0;
+            height: var(--art-settings-max-height);
+            max-height: var(--art-settings-max-height);
+            margin: 0;
+            padding: 10px;
+            border-radius: var(--art-border-radius);
+            background-color: var(--art-widget-background);
+            overflow: hidden;
+        }
+
+        .apd-config-panel.apd-subtitle-browser-left .apd-subtitle-sources.apd-subtitle-browser {
+            left: auto;
+            right: calc(100% + 8px);
+        }
+
+        .apd-subtitle-browser-head,
+        .apd-subtitle-browser-foot,
+        .apd-subtitle-browser-row {
+            display: flex;
+            align-items: center;
+        }
+
+        .apd-subtitle-browser-list {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden auto;
+        }
+
+        .apd-subtitle-browser-head {
+            min-height: 35px;
+            padding: 0 5px;
+            margin-bottom: 4px;
+            font-size: 12px;
+            cursor: pointer;
+
+            .art-setting-item-left {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                min-width: 0;
+            }
+
+            .art-setting-item-left-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 24px;
+                width: 24px;
+                height: 24px;
+            }
+
+            .art-setting-item-left-text {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            &:hover { background-color: rgba(255, 255, 255, 0.1); }
+        }
+
+        .apd-subtitle-browser-row {
+            gap: 8px;
+            min-height: 28px;
+            padding: 2px 4px;
+            cursor: pointer;
+
+            &:hover { background: rgba(255, 255, 255, .08); }
+            svg { width: 16px; height: 16px; flex: 0 0 16px; }
+            span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        }
+
+        .apd-subtitle-browser-foot {
+            justify-content: space-between;
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255, 255, 255, .12);
+
+            button { color: inherit; background: none; border: 0; cursor: pointer; }
+        }
+
+        .apd-subtitle-browser-empty { padding: 14px 4px; text-align: center; opacity: .6; font-size: 12px; }
+
+        .apd-config-select {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+
+            .apd-label {
+                width: 60px;
+                flex-shrink: 0;
+            }
+
+            select {
+                min-width: 0;
+                flex: 1;
+                height: 28px;
+                padding: 0 6px;
+                color: #fff;
+                border: 1px solid rgba(255, 255, 255, 0.25);
+                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.25);
+                color-scheme: dark;
+
+                option {
+                    color: #fff;
+                    background-color: #1f1f1f;
+                }
+            }
+        }
+
+        .apd-subtitle-style-row {
+            display: flex;
+            gap: 12px;
+
+            .apd-config-select {
+                flex: 1;
+                min-width: 0;
             }
         }
 

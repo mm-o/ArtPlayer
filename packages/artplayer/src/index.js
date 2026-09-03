@@ -55,6 +55,7 @@ export default class Artplayer extends Emitter {
         this.controls = new Control(this);
         this.contextmenu = new Contextmenu(this);
         this.subtitle = new Subtitle(this);
+        this.setSubtitleConfig(this.option.subtitle.config);
         this.installSubtitlePanel();
         this.info = new Info(this);
         this.loading = new Loading(this);
@@ -182,7 +183,7 @@ export default class Artplayer extends Emitter {
                 name: '',
                 activeTracks: [],
                 defaultLang: '',
-                maxTracks: 2,
+                sources: [],
                 config: {},
                 escape: true,
                 encoding: 'utf-8',
