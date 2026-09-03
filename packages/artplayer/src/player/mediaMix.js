@@ -35,18 +35,8 @@ function toArray(value) {
     return Array.isArray(value) ? value : [];
 }
 
-function getDanmakuPlugin(art) {
-    return art.plugins?.artplayerPluginDanmuku || art.plugins?.artplayerPluginDanmaku;
-}
-
-function danmakuConfig(option = {}) {
-    return Object.fromEntries(Object.entries(option).filter(([key]) => key !== 'danmuku' && key !== 'items'));
-}
-
 export default function mediaMix(art) {
     let currentMedia = null;
-    let danmaku = [];
-    let currentDanmakuConfig = {};
     let audioTracks = [];
     let currentMediaToken = 0;
     def(art, 'currentMedia', {
@@ -61,74 +51,6 @@ export default function mediaMix(art) {
         },
     });
 
-
-    def(art, 'danmaku', {
-        get() {
-            return danmaku;
-        },
-    });
-
-    def(art, 'getDanmaku', { value: () => danmaku.slice() });
-
-    def(art, 'setDanmaku', {
-        async value(items = []) {
-            danmaku = toArray(items);
-            const plugin = getDanmakuPlugin(art);
-            await plugin?.replace?.(danmaku);
-            art.emit('danmaku:change', danmaku);
-            return danmaku;
-        },
-    });
-
-    def(art, 'addDanmaku', {
-        async value(items = []) {
-            const added = toArray(items);
-            if (!added.length) return danmaku;
-            await getDanmakuPlugin(art)?.load?.(added);
-            danmaku = danmaku.concat(added);
-            art.emit('danmaku:add', added);
-            art.emit('danmaku:change', danmaku);
-            return danmaku;
-        },
-    });
-
-    def(art, 'emitDanmaku', {
-        async value(item) {
-            if (!item) return danmaku;
-            await getDanmakuPlugin(art)?.emit?.(item);
-            danmaku = danmaku.concat(item);
-            art.emit('danmaku:add', [item]);
-            art.emit('danmaku:change', danmaku);
-            return danmaku;
-        },
-    });
-
-    def(art, 'clearDanmaku', {
-        value() {
-            danmaku = [];
-            getDanmakuPlugin(art)?.clear?.();
-            art.emit('danmaku:change', danmaku);
-            return danmaku;
-        },
-    });
-
-    def(art, 'getDanmakuConfig', {
-        value() {
-            return danmakuConfig(getDanmakuPlugin(art)?.option || currentDanmakuConfig);
-        },
-    });
-
-    def(art, 'setDanmakuConfig', {
-        value(config = {}) {
-            getDanmakuPlugin(art)?.config?.(danmakuConfig(config));
-            return art.getDanmakuConfig();
-        },
-    });
-
-    art.on('artplayerPluginDanmuku:config', (config) => {
-        currentDanmakuConfig = danmakuConfig(config);
-        art.emit('danmaku:config', currentDanmakuConfig);
-    });
 
     def(art, 'audioTracks', {
         get() {
@@ -174,7 +96,9 @@ export default function mediaMix(art) {
             applyStartTime(art, media);
 
             if (typeof art.setSubtitles === 'function') await art.setSubtitles(media.subtitles || []);
-            if (typeof art.setDanmaku === 'function') art.setDanmaku(media.danmaku || []).catch(() => {});
+            if (typeof art.setDanmakuTracks === 'function') await art.setDanmakuTracks(
+                media.danmakuTracks || (media.danmaku?.length ? [{ id: 'media', name: 'Media', items: media.danmaku, default: true }] : []),
+            );
             if (typeof art.setAudioTracks === 'function') art.setAudioTracks(media.audioTracks || []);
 
             if (typeof art.play === 'function') {

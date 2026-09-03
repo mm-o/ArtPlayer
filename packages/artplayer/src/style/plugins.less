@@ -51,8 +51,7 @@
         font-weight: 300;
         color: #fff;
 
-        .apd-config-panel,
-        .apd-subtitle-browser-panel {
+        .apd-config-panel {
             position: absolute;
             bottom: 24px;
             left: 0;
@@ -63,15 +62,13 @@
             pointer-events: none;
         }
 
-        .apd-config-panel-inner,
-        .apd-subtitle-browser-panel {
+        .apd-config-panel-inner {
             border-radius: 3px;
             background-color: rgba(0, 0, 0, 0.85);
             padding: 10px;
         }
 
-        &.apd-subtitle-open .apd-config-panel,
-        &.apd-subtitle-browser-open .apd-subtitle-browser-panel {
+        &.apd-subtitle-open .apd-config-panel {
             opacity: 100;
             pointer-events: all;
         }
@@ -131,102 +128,6 @@
                     border-color: #00a1d6;
                 }
             }
-        }
-
-        .apd-subtitle-browser-panel {
-            display: flex;
-            flex-direction: column;
-            height: var(--art-settings-max-height);
-            overflow: hidden;
-        }
-
-        .apd-subtitle-browser-head,
-        .apd-subtitle-browser-foot,
-        .apd-subtitle-browser-row {
-            display: flex;
-            align-items: center;
-        }
-
-        .apd-subtitle-browser-head,
-        .apd-subtitle-browser-row {
-            width: 100%;
-        }
-
-        .apd-subtitle-browser-head,
-        .apd-subtitle-browser-row,
-        .apd-subtitle-browser-foot button {
-            color: inherit;
-            border: 0;
-            background: none;
-            font: inherit;
-            cursor: pointer;
-        }
-
-        .apd-subtitle-browser-head {
-            min-height: 35px;
-            gap: 5px;
-            padding: 0 5px;
-            margin-bottom: 4px;
-
-            &:hover {
-                background-color: rgba(255, 255, 255, 0.1);
-            }
-        }
-
-        .apd-subtitle-browser-head-icon {
-            .art-center();
-            flex: 0 0 24px;
-            width: 24px;
-            height: 24px;
-        }
-
-        .apd-subtitle-browser-title,
-        .apd-subtitle-browser-row span {
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .apd-subtitle-browser-list {
-            flex: 1;
-            min-height: 0;
-            overflow: hidden auto;
-        }
-
-        .apd-subtitle-browser-row {
-            gap: 8px;
-            min-height: 28px;
-            padding: 2px 4px;
-
-            &:hover {
-                background: rgba(255, 255, 255, 0.08);
-            }
-
-            input {
-                flex: 0 0 16px;
-                width: 16px;
-                height: 16px;
-                margin: 0;
-                accent-color: #00a1d6;
-            }
-        }
-
-        .apd-subtitle-browser-foot {
-            justify-content: space-between;
-            margin-top: 4px;
-            padding-top: 4px;
-            border-top: 1px solid rgba(255, 255, 255, 0.12);
-
-            span {
-                opacity: 0.7;
-            }
-        }
-
-        .apd-subtitle-browser-empty {
-            padding: 14px 4px;
-            text-align: center;
-            opacity: 0.6;
         }
 
         .apd-config-select {
@@ -367,6 +268,113 @@
     &.art-control-show {
         .art-layer-lock {
             display: flex;
+        }
+    }
+
+    .art-source-browser-panel {
+        position: absolute;
+        z-index: 122;
+        display: flex;
+        flex-direction: column;
+        width: 320px;
+        max-width: calc(100vw - var(--art-padding) * 2);
+        height: var(--art-settings-max-height);
+        padding: 10px;
+        overflow: hidden;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 300;
+        border-radius: 3px;
+        background-color: rgba(0, 0, 0, 0.85);
+        opacity: 0;
+        pointer-events: none;
+
+        &.art-source-browser-open {
+            opacity: 100;
+            pointer-events: all;
+        }
+
+        .art-source-browser-head,
+        .art-source-browser-foot,
+        .art-source-browser-row {
+            display: flex;
+            align-items: center;
+        }
+
+        .art-source-browser-head,
+        .art-source-browser-row {
+            width: 100%;
+        }
+
+        .art-source-browser-head,
+        .art-source-browser-row,
+        .art-source-browser-foot button {
+            color: inherit;
+            border: 0;
+            background: none;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .art-source-browser-head {
+            min-height: 35px;
+            gap: 5px;
+            padding: 0 5px;
+            margin-bottom: 4px;
+
+            &:hover { background-color: rgba(255, 255, 255, 0.1); }
+        }
+
+        .art-source-browser-head-icon {
+            .art-center();
+            flex: 0 0 24px;
+            width: 24px;
+            height: 24px;
+        }
+
+        .art-source-browser-title,
+        .art-source-browser-row span {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .art-source-browser-list {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden auto;
+        }
+
+        .art-source-browser-row {
+            gap: 8px;
+            min-height: 28px;
+            padding: 2px 4px;
+
+            &:hover { background: rgba(255, 255, 255, 0.08); }
+
+            input {
+                flex: 0 0 16px;
+                width: 16px;
+                height: 16px;
+                margin: 0;
+                accent-color: #00a1d6;
+            }
+        }
+
+        .art-source-browser-foot {
+            justify-content: space-between;
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+
+            span { opacity: 0.7; }
+        }
+
+        .art-source-browser-empty {
+            padding: 14px 4px;
+            text-align: center;
+            opacity: 0.6;
         }
     }
 }

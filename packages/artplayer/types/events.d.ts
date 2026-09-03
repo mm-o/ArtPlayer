@@ -33,9 +33,11 @@ export type Events = {
     mask: [state: boolean];
     subtitle: [state: boolean];
     'subtitle:config': [config: Record<string, any>];
-    'danmaku:change': [danmaku: import('./media').ArtplayerMediaDanmakuItem[]];
+    'subtitle:change': [track: import('./media').ArtplayerMediaSubtitleTrack | null, tracks: import('./media').ArtplayerMediaSubtitleTrack[]];
+    'danmaku:change': [danmaku: import('./media').ArtplayerMediaDanmakuItem[], tracks: import('./media').ArtplayerMediaDanmakuTrack[]];
     'danmaku:add': [danmaku: import('./media').ArtplayerMediaDanmakuItem[]];
     'danmaku:config': [config: Record<string, any>];
+    'danmaku:sources': [sources: import('./media').ArtplayerDanmakuSource[]];
     contextmenu: [state: boolean];
     control: [state: boolean];
     setting: [state: boolean];

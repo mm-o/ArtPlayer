@@ -32,6 +32,7 @@ import airplayMix from './airplayMix';
 import qualityMix from './qualityMix';
 import thumbnailsMix from './thumbnailsMix';
 import subtitleMix from './subtitleMix';
+import danmakuMix from './danmakuMix';
 import mediaMix from './mediaMix';
 import actionMix from './actionMix';
 import playlistMix from './playlist/index.js';
@@ -74,6 +75,7 @@ export default class Player {
         qualityMix(art);
         thumbnailsMix(art);
         subtitleMix(art);
+        danmakuMix(art);
         mediaMix(art);
         actionMix(art);
         playlistMix(art);

@@ -46,7 +46,8 @@
             }
         }
 
-        &:hover {
+        &:hover,
+        &.apd-source-open {
             .apd-config-panel {
                 opacity: 100;
                 pointer-events: all;
@@ -270,6 +271,47 @@
             cursor: not-allowed;
             color: #666;
             background-color: #e7e7e7;
+        }
+    }
+}
+
+.artplayer-plugin-danmuku .apd-source-tracks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-bottom: 15px;
+
+    &:empty { display: none; }
+
+    .apd-source-track {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        cursor: pointer;
+
+        .apd-check-on { display: none; }
+        &[data-active='true'] .apd-check-on { display: block; }
+        &[data-active='true'] .apd-check-off { display: none; }
+    }
+}
+
+.artplayer-plugin-danmuku .apd-source-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+
+    button {
+        flex: 1;
+        height: 28px;
+        color: inherit;
+        cursor: pointer;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.08);
+
+        &:hover {
+            color: #00a1d6;
+            border-color: #00a1d6;
         }
     }
 }

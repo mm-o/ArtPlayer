@@ -30,7 +30,32 @@ export type ArtplayerMediaDanmakuItem = {
     text: string;
     mode?: number;
     color?: string;
+    fontSize?: number;
     [key: string]: any;
+};
+
+export type ArtplayerMediaDanmakuTrack = {
+    id?: string;
+    name?: string;
+    url?: string;
+    file?: File;
+    data?: string;
+    type?: string;
+    source?: string;
+    items?: ArtplayerMediaDanmakuItem[];
+    default?: boolean;
+    [key: string]: any;
+};
+
+export type ArtplayerDanmakuSource = {
+    name: string;
+    select?: boolean;
+    load?: (art: any) => Promise<ArtplayerMediaDanmakuTrack[]> | ArtplayerMediaDanmakuTrack[];
+    browse?: {
+        roots: (art: any) => Promise<any[]> | any[];
+        children: (item: any, art: any) => Promise<any[]> | any[];
+        select: (items: any[], art: any) => Promise<ArtplayerMediaDanmakuTrack[]> | ArtplayerMediaDanmakuTrack[];
+    };
 };
 
 export type ArtplayerMediaChapter = {
@@ -106,6 +131,7 @@ export type ArtplayerMedia = {
     qualityLoader?: () => Promise<quality[]>;
     subtitles?: ArtplayerMediaSubtitleTrack[];
     danmaku?: ArtplayerMediaDanmakuItem[];
+    danmakuTracks?: ArtplayerMediaDanmakuTrack[];
     chapters?: ArtplayerMediaChapter[] | string | null;
     thumbnails?: Thumbnails | string;
     annotations?: object | string;

@@ -1,4 +1,3 @@
-import { bilibiliDanmuParseFromUrl } from './bilibili';
 import workerText from 'bundle-text:./worker';
 
 export default class Danmuku {
@@ -87,7 +86,7 @@ export default class Danmuku {
     // 配置校验
     static get scheme() {
         return {
-            danmuku: 'array|function|string',
+            danmuku: 'array|function',
             speed: 'number',
             margin: 'array',
             opacity: 'number',
@@ -275,8 +274,6 @@ export default class Danmuku {
                 danmus = await target(); // 异步函数获取
             } else if (target instanceof Promise) {
                 danmus = await target; // 从 Promise 对象获取
-            } else if (typeof target === 'string') {
-                danmus = await bilibiliDanmuParseFromUrl(target); // 从B站xml链接解析
             } else if (Array.isArray(target)) {
                 danmus = target; // 直接传入数组
             }
@@ -293,7 +290,7 @@ export default class Danmuku {
             for (let index = 0; index < danmus.length; index++) {
                 if (loadId !== this.loadId) return this;
                 const danmu = danmus[index];
-                await this.emit(danmu);
+                this.emit(danmu);
             }
 
             this.art.emit('artplayerPluginDanmuku:loaded', this.queue);
@@ -322,7 +319,7 @@ export default class Danmuku {
     }
 
     // 把原始弹幕转换到弹幕队列
-    async emit(danmu) {
+    emit(danmu) {
         const { clamp } = this.utils;
 
         this.validator(danmu, {
@@ -330,6 +327,7 @@ export default class Danmuku {
             mode: '?number', // 弹幕模式: 0: 滚动，1: 顶部，2: 底部
             color: '?string', // 弹幕颜色
             time: '?number', // 弹幕时间
+            fontSize: '?number', // 弹幕字号
             border: '?boolean', // 弹幕是否有边框
             style: '?object', // 弹幕额外样式
         });
@@ -338,7 +336,7 @@ export default class Danmuku {
         if (!danmu.text.trim()) return this;
 
         // 设置弹幕时间，如果没有则默认为当前时间加 0.5 秒
-        if (danmu.time) {
+        if (danmu.time !== undefined) {
             danmu.time = clamp(danmu.time, 0, Infinity);
         } else {
             danmu.time = this.art.currentTime + 0.5;
@@ -528,7 +526,7 @@ export default class Danmuku {
 
                         // 设置初始弹幕样式
                         danmu.$ref.style.opacity = this.option.opacity;
-                        danmu.$ref.style.fontSize = `${this.fontSize}px`;
+                        danmu.$ref.style.fontSize = `${danmu.fontSize || this.fontSize}px`;
                         danmu.$ref.style.color = danmu.color;
                         danmu.$ref.style.border = danmu.border ? `1px solid ${danmu.color}` : null;
                         danmu.$ref.style.backgroundColor = danmu.border ? 'rgb(0 0 0 / 50%)' : null;
@@ -569,22 +567,22 @@ export default class Danmuku {
                                 danmu.$ref.dataset.mode = danmu.mode; // CSS控制模式的显示和隐藏
 
                                 switch (danmu.mode) {
-                                    // 滚动的弹幕
-                                    case 0: {
-                                        danmu.$ref.style.left = `${clientWidth}px`;
-                                        danmu.$ref.style.marginLeft = '0px';
-                                        danmu.$ref.style.transform = `translateX(${-distance}px)`;
-                                        danmu.$ref.style.transition = `transform ${danmu.$restTime}s linear 0s`;
-                                        break;
-                                    }
-                                    case 1:
+                                // 滚动的弹幕
+                                case 0: {
+                                    danmu.$ref.style.left = `${clientWidth}px`;
+                                    danmu.$ref.style.marginLeft = '0px';
+                                    danmu.$ref.style.transform = `translateX(${-distance}px)`;
+                                    danmu.$ref.style.transition = `transform ${danmu.$restTime}s linear 0s`;
+                                    break;
+                                }
+                                case 1:
                                     // falls through
-                                    case 2:
-                                        danmu.$ref.style.left = '50%';
-                                        danmu.$ref.style.marginLeft = `-${danmu.$ref.clientWidth / 2}px`;
-                                        break;
-                                    default:
-                                        break;
+                                case 2:
+                                    danmu.$ref.style.left = '50%';
+                                    danmu.$ref.style.marginLeft = `-${danmu.$ref.clientWidth / 2}px`;
+                                    break;
+                                default:
+                                    break;
                                 }
 
                                 this.art.emit('artplayerPluginDanmuku:visible', danmu);
@@ -613,28 +611,28 @@ export default class Danmuku {
 
         this.filter('stop', (danmu) => {
             switch (danmu.mode) {
-                // 滚动的弹幕
-                case 0:
-                    danmu.$ref.style.left = `${clientWidth}px`;
-                    break;
-                default:
-                    break;
+            // 滚动的弹幕
+            case 0:
+                danmu.$ref.style.left = `${clientWidth}px`;
+                break;
+            default:
+                break;
             }
         });
 
         this.filter('emit', (danmu) => {
             danmu.$lastStartTime = Date.now();
             switch (danmu.mode) {
-                // 滚动的弹幕
-                case 0: {
-                    const distance = clientWidth + danmu.$ref.clientWidth;
-                    danmu.$ref.style.left = `${clientWidth}px`;
-                    danmu.$ref.style.transform = `translateX(${-distance}px)`;
-                    danmu.$ref.style.transition = `transform ${danmu.$restTime}s linear 0s`;
-                    break;
-                }
-                default:
-                    break;
+            // 滚动的弹幕
+            case 0: {
+                const distance = clientWidth + danmu.$ref.clientWidth;
+                danmu.$ref.style.left = `${clientWidth}px`;
+                danmu.$ref.style.transform = `translateX(${-distance}px)`;
+                danmu.$ref.style.transition = `transform ${danmu.$restTime}s linear 0s`;
+                break;
+            }
+            default:
+                break;
             }
         });
     }
@@ -646,15 +644,15 @@ export default class Danmuku {
             this.setState(danmu, 'emit'); // 转换为emit状态
             danmu.$lastStartTime = Date.now();
             switch (danmu.mode) {
-                // 继续滚动的弹幕
-                case 0: {
-                    const distance = clientWidth + danmu.$ref.clientWidth;
-                    danmu.$ref.style.transform = `translateX(${-distance}px)`;
-                    danmu.$ref.style.transition = `transform ${danmu.$restTime}s linear 0s`;
-                    break;
-                }
-                default:
-                    break;
+            // 继续滚动的弹幕
+            case 0: {
+                const distance = clientWidth + danmu.$ref.clientWidth;
+                danmu.$ref.style.transform = `translateX(${-distance}px)`;
+                danmu.$ref.style.transition = `transform ${danmu.$restTime}s linear 0s`;
+                break;
+            }
+            default:
+                break;
             }
         });
 
@@ -667,15 +665,15 @@ export default class Danmuku {
         this.filter('emit', (danmu) => {
             this.setState(danmu, 'stop'); // 转换为stop状态
             switch (danmu.mode) {
-                // 停止滚动的弹幕
-                case 0: {
-                    const translateX = clientWidth - (this.getLeft(danmu.$ref) - this.getLeft(this.$player));
-                    danmu.$ref.style.transform = `translateX(${-translateX}px)`;
-                    danmu.$ref.style.transition = 'transform 0s linear 0s';
-                    break;
-                }
-                default:
-                    break;
+            // 停止滚动的弹幕
+            case 0: {
+                const translateX = clientWidth - (this.getLeft(danmu.$ref) - this.getLeft(this.$player));
+                danmu.$ref.style.transform = `translateX(${-translateX}px)`;
+                danmu.$ref.style.transition = 'transform 0s linear 0s';
+                break;
+            }
+            default:
+                break;
             }
         });
 

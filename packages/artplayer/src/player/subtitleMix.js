@@ -1,5 +1,6 @@
 import { def } from '../utils/property.js';
 import installSubtitlePanel from './subtitlePanel.js';
+import createSourceBrowser from './sourceBrowser.js';
 import { pickSubtitleTracks, sameSubtitle, uniqueSubtitleTracks } from './subtitleTrack.js';
 
 const toArray = (value) => (Array.isArray(value) ? value : []);
@@ -34,6 +35,7 @@ export default function subtitleMix(art) {
     const objectUrls = new Set();
 
     def(art, 'installSubtitlePanel', { value: () => installSubtitlePanel(art) });
+    def(art, 'createSourceBrowser', { value: (option) => createSourceBrowser(art, option) });
     def(art, 'subtitleTracks', { get: () => tracks });
     def(art, 'activeSubtitleTracks', { get: () => active });
     def(art, 'subtitleSources', { get: () => sources });

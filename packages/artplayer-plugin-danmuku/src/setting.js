@@ -44,6 +44,8 @@ export default class Setting {
             $speedValue: null,
             $input: null,
             $send: null,
+            $sources: null,
+            $tracks: null,
         };
 
         this.slider = {
@@ -118,6 +120,8 @@ export default class Setting {
                 ${$config}
                 <div class="apd-config-panel">
                     <div class="apd-config-panel-inner">
+                        <div class="apd-source-tracks"></div>
+                        <div class="apd-source-buttons"></div>
                         <div class="apd-config-mode">
                             按类型屏蔽
                             <div class="apd-modes">
@@ -285,21 +289,21 @@ export default class Setting {
         return this.option.COLOR.length
             ? this.option.COLOR
             : [
-                  '#FE0302',
-                  '#FF7204',
-                  '#FFAA02',
-                  '#FFD302',
-                  '#FFFF00',
-                  '#A0EE00',
-                  '#00CD00',
-                  '#019899',
-                  '#4266BE',
-                  '#89D5FF',
-                  '#CC0273',
-                  '#222222',
-                  '#9B9B9B',
-                  '#FFFFFF',
-              ];
+                '#FE0302',
+                '#FF7204',
+                '#FFAA02',
+                '#FFD302',
+                '#FFFF00',
+                '#A0EE00',
+                '#00CD00',
+                '#019899',
+                '#4266BE',
+                '#89D5FF',
+                '#CC0273',
+                '#222222',
+                '#9B9B9B',
+                '#FFFFFF',
+            ];
     }
 
     query(selector) {
@@ -352,8 +356,12 @@ export default class Setting {
         this.template.$speedValue = this.query('.apd-config-speed .apd-value');
         this.template.$input = this.query('.apd-input');
         this.template.$send = this.query('.apd-send');
+        this.template.$tracks = this.query('.apd-source-tracks');
+        this.template.$sources = this.query('.apd-source-buttons');
 
         const { $toggle } = this.template;
+
+        this.createSources();
 
         this.art.on('artplayerPluginDanmuku:show', () => {
             tooltip($toggle, '关闭弹幕');
@@ -362,6 +370,61 @@ export default class Setting {
         this.art.on('artplayerPluginDanmuku:hide', () => {
             tooltip($toggle, '打开弹幕');
         });
+    }
+
+    createSources() {
+        const { art, template } = this;
+        const { $configPanel, $tracks, $sources } = template;
+        const picker = art.createSourceBrowser({
+            panel: $configPanel,
+            accept: '.xml,.ass,.ssa,.json',
+            title: art.i18n.get('Danmaku'),
+            empty: 'No Danmaku',
+            onOpen: (open) => this.template.$config.classList.toggle('apd-source-open', open),
+            onFiles: (files) => art.addDanmakuFiles(files),
+            onSelect: (tracks, source) => art.addDanmakuTracks(tracks, source.select !== false),
+        });
+        const renderTracks = () => {
+            $tracks.innerHTML = '';
+            art.danmakuTracks.forEach((track, index) => {
+                const $item = this.utils.createElement('div');
+                $item.className = 'apd-other apd-source-track';
+                $item.dataset.sourceIndex = index;
+                $item.innerHTML = `${$check_on}${$check_off}<span></span>`;
+                $item.querySelector('span').textContent = track.name || art.i18n.get('Danmaku');
+                $item.dataset.active = art.activeDanmakuTracks.includes(track);
+                $tracks.appendChild($item);
+            });
+        };
+        const renderSources = () => {
+            $sources.innerHTML = '';
+            [['local', art.i18n.get('Local Danmaku')], ...art.danmakuSources.map((source, index) => [index, source.name || art.i18n.get('Danmaku')])].forEach(([value, label]) => {
+                const $button = this.utils.createElement('button');
+                $button.type = 'button';
+                $button.dataset.source = value;
+                $button.textContent = label;
+                $sources.appendChild($button);
+            });
+        };
+        art.proxy($tracks, 'click', (event) => {
+            const row = event.target.closest('[data-source-index]');
+            if (!row) return;
+            const track = art.danmakuTracks[Number(row.dataset.sourceIndex)];
+            art.selectDanmakuTracks(art.activeDanmakuTracks.includes(track)
+                ? art.activeDanmakuTracks.filter((item) => item !== track)
+                : [...art.activeDanmakuTracks, track]);
+        });
+        art.proxy($sources, 'click', (event) => {
+            const button = event.target.closest('[data-source]');
+            if (button) picker.open(button.dataset.source === 'local' ? 'local' : art.danmakuSources[Number(button.dataset.source)]);
+        });
+        Object.defineProperty(art, 'openDanmakuSource', {
+            value: (source) => picker.open(source === 'local' ? 'local' : typeof source === 'string' ? art.danmakuSources.find((item) => item.name === source) : source),
+        });
+        art.on('danmaku:change', renderTracks);
+        art.on('danmaku:sources', renderSources);
+        renderTracks();
+        renderSources();
     }
 
     registerControls() {

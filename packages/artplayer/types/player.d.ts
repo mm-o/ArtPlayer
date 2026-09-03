@@ -4,6 +4,7 @@ import { quality } from './quality';
 import {
     ArtplayerMedia,
     ArtplayerMediaAudioTrack,
+    ArtplayerDanmakuSource,
     ArtplayerMediaDanmakuItem,
     ArtplayerMediaSubtitleTrack,
     ArtplayerPlaylist,
@@ -94,7 +95,11 @@ export declare class Player {
     readonly subtitleTracks: ArtplayerMediaSubtitleTrack[];
     readonly activeSubtitleTracks: ArtplayerMediaSubtitleTrack[];
     readonly subtitleSources: import('./subtitle').SubtitleSource[];
+    createSourceBrowser(option: Record<string, any>): Record<string, any>;
     readonly danmaku: ArtplayerMediaDanmakuItem[];
+    readonly danmakuTracks: import('./media').ArtplayerMediaDanmakuTrack[];
+    readonly activeDanmakuTracks: import('./media').ArtplayerMediaDanmakuTrack[];
+    readonly danmakuSources: ArtplayerDanmakuSource[];
     readonly audioTracks: ArtplayerMediaAudioTrack[];
     readonly loopSegment: LoopSegment | null;
     readonly playlist: ArtplayerPlaylist & { items: ArtplayerMedia[] };
@@ -120,6 +125,15 @@ export declare class Player {
         tracks?: ArtplayerMediaSubtitleTrack[],
     ): Promise<ArtplayerMediaSubtitleTrack[] | null>;
     getDanmaku(): ArtplayerMediaDanmakuItem[];
+    getDanmakuTracks(): import('./media').ArtplayerMediaDanmakuTrack[];
+    getActiveDanmakuTracks(): import('./media').ArtplayerMediaDanmakuTrack[];
+    getDanmakuSources(): ArtplayerDanmakuSource[];
+    setDanmakuSources(sources?: ArtplayerDanmakuSource[]): ArtplayerDanmakuSource[];
+    openDanmakuSource(source?: string | ArtplayerDanmakuSource): Promise<void> | void;
+    addDanmakuTracks(tracks?: import('./media').ArtplayerMediaDanmakuTrack[], select?: boolean): Promise<ArtplayerMediaDanmakuItem[]> | import('./media').ArtplayerMediaDanmakuTrack[];
+    addDanmakuFiles(files?: File[]): Promise<ArtplayerMediaDanmakuItem[]> | import('./media').ArtplayerMediaDanmakuTrack[];
+    setDanmakuTracks(tracks?: import('./media').ArtplayerMediaDanmakuTrack[]): Promise<ArtplayerMediaDanmakuItem[]>;
+    selectDanmakuTracks(tracks?: import('./media').ArtplayerMediaDanmakuTrack[]): Promise<ArtplayerMediaDanmakuItem[]>;
     setDanmaku(danmaku?: ArtplayerMediaDanmakuItem[]): Promise<ArtplayerMediaDanmakuItem[]>;
     addDanmaku(danmaku?: ArtplayerMediaDanmakuItem[]): Promise<ArtplayerMediaDanmakuItem[]>;
     emitDanmaku(danmaku: ArtplayerMediaDanmakuItem): Promise<ArtplayerMediaDanmakuItem[]>;

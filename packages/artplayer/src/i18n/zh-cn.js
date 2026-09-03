@@ -34,6 +34,8 @@
     Quality: '清晰度',
     Danmaku: '弹幕',
     'Danmaku Settings': '弹幕设置',
+    'No Danmaku': '暂无弹幕',
+    'Local Danmaku': '本地弹幕',
     'No Subtitle': '暂无字幕',
     Loading: '加载中...',
     Confirm: '确定',
