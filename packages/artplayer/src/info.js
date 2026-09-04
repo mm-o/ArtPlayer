@@ -52,7 +52,7 @@ export default class Info extends Component {
         this.art.on('destroy', () => clearTimeout(timer));
 
         const renderMedia = () => {
-            const { currentMedia, playlist, subtitleTracks, audioTracks, danmaku } = this.art;
+            const { currentMedia, playlist, audioTracks } = this.art;
             const media = currentMedia || {};
             const items = [
                 ['Media title:', media.title || media.name],
@@ -64,9 +64,9 @@ export default class Info extends Component {
                 ['End time:', media.endTime],
                 ['Sources:', getLength(media.sources)],
                 ['Qualities:', getLength(media.qualities || media.quality || this.art.option.quality)],
-                ['Subtitles:', getLength(media.subtitles || subtitleTracks)],
+                ['Subtitles:', getLength(media.subtitles || this.art.getSubtitles())],
                 ['Audio tracks:', getLength(media.audioTracks || audioTracks)],
-                ['Danmaku:', getLength(media.danmaku || danmaku)],
+                ['Danmaku:', getLength(media.danmaku || this.art.getDanmaku())],
                 ['Chapters:', getLength(media.chapters)],
                 ['Playlist items:', getLength(playlist?.items)],
                 ['Playlist groups:', getLength(playlist?.groups)],

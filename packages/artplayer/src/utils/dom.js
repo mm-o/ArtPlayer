@@ -1,4 +1,4 @@
-import { isMobile } from './compatibility';
+import { isMobile } from './compatibility.js';
 
 export function query(selector, parent = document) {
     return parent.querySelector(selector);

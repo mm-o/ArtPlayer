@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { pickSubtitleTracks, uniqueSubtitleTracks } from '../src/player/subtitleTrack.js';
+import subtitleMix from '../src/player/subtitleMix.js';
 import { parseSubtitle } from '../src/utils/parseSubtitle.js';
 
 const tracks = [
@@ -37,4 +38,21 @@ test('parses VTT and Bilibili JSON into the same cue model', () => {
         parseSubtitle('{"body":[{"from":1,"to":2.5,"content":"Hello"}]}', 'json'),
         [{ startTime: 1, endTime: 2.5, text: 'Hello' }],
     );
+});
+
+test('exposes subtitle tracks through the same getter contract as danmaku', async () => {
+    const art = {
+        option: { subtitle: { config: {}, sources: [] } },
+        subtitle: { cues: [], clear() {}, addMultiple: async () => {}, style() {}, show: true },
+        notice: {},
+        emit() {},
+        on() {},
+    };
+    subtitleMix(art);
+    await art.setSubtitles(tracks);
+
+    assert.deepEqual(art.getSubtitles(), tracks);
+    assert.deepEqual(art.getActiveSubtitles(), [tracks[0]]);
+    art.getSubtitles().pop();
+    assert.deepEqual(art.getSubtitles(), tracks);
 });

@@ -12,6 +12,11 @@ export const sourceBrowserSide = ({ left, panel, browser, player, padding }) => 
     return right >= browser || right >= left - padding - 8 ? 'right' : 'left';
 };
 
+export const resolveSource = (source, sources = []) => {
+    if (source === 'local' || typeof source === 'object') return source;
+    return sources[Number(source)] || sources.find((item) => item.name === source);
+};
+
 export default function createSourceBrowser(art, option) {
     const { icons, i18n, template } = art;
     const $browser = append(template.$player, '<div class="art-source-browser-panel"></div>');
@@ -83,7 +88,8 @@ export default function createSourceBrowser(art, option) {
         current.loading = false;
         render();
     };
-    const open = async (source) => {
+    const open = async (source, sources) => {
+        source = resolveSource(source, sources);
         if (source === 'local') {
             const input = Object.assign(document.createElement('input'), { type: 'file', multiple: true, accept: option.accept });
             input.onchange = () => option.onFiles(Array.from(input.files || []));

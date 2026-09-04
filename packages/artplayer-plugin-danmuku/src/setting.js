@@ -1,6 +1,4 @@
 import style from 'bundle-text:./style.less';
-import $on from 'bundle-text:./img/on.svg';
-import $off from 'bundle-text:./img/off.svg';
 import $config from 'bundle-text:./img/config.svg';
 import $style from 'bundle-text:./img/style.svg';
 import $mode_0_off from 'bundle-text:./img/mode_0_off.svg';
@@ -9,8 +7,6 @@ import $mode_1_off from 'bundle-text:./img/mode_1_off.svg';
 import $mode_1_on from 'bundle-text:./img/mode_1_on.svg';
 import $mode_2_off from 'bundle-text:./img/mode_2_off.svg';
 import $mode_2_on from 'bundle-text:./img/mode_2_on.svg';
-import $check_on from 'bundle-text:./img/check_on.svg';
-import $check_off from 'bundle-text:./img/check_off.svg';
 
 export default class Setting {
     constructor(art, danmuku) {
@@ -87,8 +83,6 @@ export default class Setting {
 
     static get icons() {
         return {
-            $on,
-            $off,
             $config,
             $style,
             $mode_0_off,
@@ -97,8 +91,6 @@ export default class Setting {
             $mode_1_on,
             $mode_2_off,
             $mode_2_on,
-            $check_on,
-            $check_off,
         };
     }
 
@@ -113,9 +105,10 @@ export default class Setting {
     get TEMPLATE() {
         const { option } = this;
         return `
-            <div class="apd-toggle">
-                ${$on}${$off}
-            </div>
+            <label class="apd-other apd-toggle">
+                <input class="apd-check" type="checkbox">
+                <span>弹幕</span>
+            </label>
             <div class="apd-config">
                 ${$config}
                 <div class="apd-config-panel">
@@ -141,11 +134,11 @@ export default class Setting {
                         </div>
                         <div class="apd-config-other">
                             <div class="apd-other apd-anti-overlap">
-                                ${$check_on}${$check_off}
+                                <input class="apd-check" type="checkbox">
                                 防止弹幕重叠
                             </div>
                             <div class="apd-other apd-sync-video">
-                                ${$check_on}${$check_off}
+                                <input class="apd-check" type="checkbox">
                                 同步视频速度
                             </div>
                         </div>
@@ -329,7 +322,7 @@ export default class Setting {
     }
 
     createTemplate() {
-        const { createElement, tooltip } = this.utils;
+        const { createElement } = this.utils;
 
         const $danmuku = createElement('div');
         $danmuku.className = 'artplayer-plugin-danmuku';
@@ -358,18 +351,9 @@ export default class Setting {
         this.template.$send = this.query('.apd-send');
         this.template.$tracks = this.query('.apd-source-tracks');
         this.template.$sources = this.query('.apd-source-buttons');
-
-        const { $toggle } = this.template;
+        this.query('.apd-config-panel-inner').prepend(this.template.$toggle);
 
         this.createSources();
-
-        this.art.on('artplayerPluginDanmuku:show', () => {
-            tooltip($toggle, '关闭弹幕');
-        });
-
-        this.art.on('artplayerPluginDanmuku:hide', () => {
-            tooltip($toggle, '打开弹幕');
-        });
     }
 
     createSources() {
@@ -386,19 +370,20 @@ export default class Setting {
         });
         const renderTracks = () => {
             $tracks.innerHTML = '';
-            art.danmakuTracks.forEach((track, index) => {
+            const active = art.getActiveDanmakuTracks();
+            art.getDanmakuTracks().forEach((track, index) => {
                 const $item = this.utils.createElement('div');
                 $item.className = 'apd-other apd-source-track';
                 $item.dataset.sourceIndex = index;
-                $item.innerHTML = `${$check_on}${$check_off}<span></span>`;
+                $item.innerHTML = '<input class="apd-check" type="checkbox"><span></span>';
                 $item.querySelector('span').textContent = track.name || art.i18n.get('Danmaku');
-                $item.dataset.active = art.activeDanmakuTracks.includes(track);
+                $item.querySelector('.apd-check').checked = active.includes(track);
                 $tracks.appendChild($item);
             });
         };
         const renderSources = () => {
             $sources.innerHTML = '';
-            [['local', art.i18n.get('Local Danmaku')], ...art.danmakuSources.map((source, index) => [index, source.name || art.i18n.get('Danmaku')])].forEach(([value, label]) => {
+            [['local', art.i18n.get('Local Danmaku')], ...art.getDanmakuSources().map((source, index) => [index, source.name || art.i18n.get('Danmaku')])].forEach(([value, label]) => {
                 const $button = this.utils.createElement('button');
                 $button.type = 'button';
                 $button.dataset.source = value;
@@ -409,17 +394,16 @@ export default class Setting {
         art.proxy($tracks, 'click', (event) => {
             const row = event.target.closest('[data-source-index]');
             if (!row) return;
-            const track = art.danmakuTracks[Number(row.dataset.sourceIndex)];
-            art.selectDanmakuTracks(art.activeDanmakuTracks.includes(track)
-                ? art.activeDanmakuTracks.filter((item) => item !== track)
-                : [...art.activeDanmakuTracks, track]);
+            const track = art.getDanmakuTracks()[Number(row.dataset.sourceIndex)];
+            const active = art.getActiveDanmakuTracks();
+            art.selectDanmakuTracks(active.includes(track) ? active.filter((item) => item !== track) : [...active, track]);
         });
         art.proxy($sources, 'click', (event) => {
             const button = event.target.closest('[data-source]');
-            if (button) picker.open(button.dataset.source === 'local' ? 'local' : art.danmakuSources[Number(button.dataset.source)]);
+            if (button) art.openDanmakuSource(button.dataset.source);
         });
         Object.defineProperty(art, 'openDanmakuSource', {
-            value: (source) => picker.open(source === 'local' ? 'local' : typeof source === 'string' ? art.danmakuSources.find((item) => item.name === source) : source),
+            value: (source) => picker.open(source, art.getDanmakuSources()),
         });
         art.on('danmaku:change', renderTracks);
         art.on('danmaku:sources', renderSources);
@@ -429,28 +413,12 @@ export default class Setting {
 
     registerControls() {
         const { controls } = this.art;
-        const { $danmuku, $toggle, $config } = this.template;
-
-        [$toggle, $config].forEach((item) => item.parentNode === $danmuku && $danmuku.removeChild(item));
+        const { $config } = this.template;
 
         controls.addPinned('danmaku', 'Danmaku', {
             name: 'danmaku',
             position: 'right',
             index: 12,
-            style: {
-                width: 'var(--art-control-height)',
-                height: 'var(--art-control-height)',
-                gap: 0,
-            },
-            mounted: ($control) => {
-                $control.classList.add('artplayer-plugin-danmuku');
-                this.append($control, $toggle);
-            },
-        });
-        controls.addPinned('danmakuConfig', 'Danmaku Settings', {
-            name: 'danmakuConfig',
-            position: 'right',
-            index: 13,
             style: {
                 width: 'var(--art-control-height)',
                 height: 'var(--art-control-height)',
@@ -466,7 +434,8 @@ export default class Setting {
     createEvents() {
         const { $toggle, $configModes, $styleModes, $colors, $antiOverlap, $syncVideo, $send, $input } = this.template;
 
-        this.art.proxy($toggle, 'click', () => {
+        this.art.proxy($toggle, 'click', (event) => {
+            event.preventDefault();
             this.danmuku.config({
                 visible: !this.option.visible,
             });
@@ -776,7 +745,7 @@ export default class Setting {
     }
 
     reset() {
-        const { inverseClass, tooltip } = this.utils;
+        const { inverseClass } = this.utils;
         const { $toggle, $colors } = this.template;
 
         this.slider.opacity.reset();
@@ -784,14 +753,14 @@ export default class Setting {
         this.slider.fontSize.reset();
         this.slider.speed.reset();
 
-        this.setData('danmukuVisible', this.option.visible);
         this.setData('danmukuMode', this.option.mode);
         this.setData('danmukuColor', this.option.color);
         this.setData('danmukuMode0', this.option.modes.includes(0));
         this.setData('danmukuMode1', this.option.modes.includes(1));
         this.setData('danmukuMode2', this.option.modes.includes(2));
-        this.setData('danmukuAntiOverlap', this.option.antiOverlap);
-        this.setData('danmukuSyncVideo', this.option.synchronousPlayback);
+        $toggle.querySelector('.apd-check').checked = this.option.visible;
+        this.template.$antiOverlap.querySelector('.apd-check').checked = this.option.antiOverlap;
+        this.template.$syncVideo.querySelector('.apd-check').checked = this.option.synchronousPlayback;
         this.setData('danmukuTheme', this.option.theme);
         this.setData('danmukuEmitter', this.option.emitter);
 
@@ -799,7 +768,6 @@ export default class Setting {
         const $color = Array.from(colors).find((item) => item.dataset.color === this.option.color.toUpperCase());
         $color && inverseClass($color, 'apd-active');
 
-        tooltip($toggle, this.option.visible ? '关闭弹幕' : '打开弹幕');
 
         this.resize();
     }

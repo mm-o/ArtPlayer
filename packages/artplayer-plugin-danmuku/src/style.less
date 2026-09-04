@@ -43,6 +43,14 @@
                 border-radius: 3px;
                 background-color: rgba(0, 0, 0, 0.85);
                 padding: 10px;
+
+                > .apd-toggle {
+                    display: flex;
+                    align-items: center;
+                    justify-content: flex-start;
+                    height: 28px;
+                    margin-bottom: 10px;
+                }
             }
         }
 
@@ -160,12 +168,6 @@
         display: flex;
         align-items: center;
         gap: 20px;
-
-        .apd-check-off,
-        .apd-check-on {
-            width: 16px;
-            height: 16px;
-        }
 
         .apd-other {
             display: flex;
@@ -289,10 +291,22 @@
         gap: 2px;
         cursor: pointer;
 
-        .apd-check-on { display: none; }
-        &[data-active='true'] .apd-check-on { display: block; }
-        &[data-active='true'] .apd-check-off { display: none; }
     }
+}
+
+.artplayer-plugin-danmuku .apd-check {
+    display: block;
+    flex: 0 0 16px;
+    box-sizing: border-box;
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    max-width: 16px;
+    min-height: 16px;
+    max-height: 16px;
+    margin: 0;
+    padding: 0;
+    accent-color: @highlight;
 }
 
 .artplayer-plugin-danmuku .apd-source-buttons {
@@ -329,9 +343,7 @@
         height: 38px;
         gap: 16px;
 
-        .apd-config-icon,
-        .apd-toggle-off,
-        .apd-toggle-on {
+        .apd-config-icon {
             width: 28px;
             height: 28px;
         }
@@ -393,74 +405,6 @@
 
         &::placeholder {
             color: rgba(0, 0, 0, 0.3);
-        }
-    }
-}
-
-[data-danmuku-visible='false'] {
-    .apd-toggle-off {
-        display: block;
-    }
-
-    .apd-toggle-on {
-        display: none;
-    }
-}
-
-[data-danmuku-visible='true'] {
-    .apd-toggle-off {
-        display: none;
-    }
-
-    .apd-toggle-on {
-        display: block;
-    }
-}
-
-[data-danmuku-anti-overlap='false'] {
-    .apd-anti-overlap {
-        .apd-check-on {
-            display: none;
-        }
-
-        .apd-check-off {
-            display: block;
-        }
-    }
-}
-
-[data-danmuku-anti-overlap='true'] {
-    .apd-anti-overlap {
-        .apd-check-on {
-            display: block;
-        }
-
-        .apd-check-off {
-            display: none;
-        }
-    }
-}
-
-[data-danmuku-sync-video='false'] {
-    .apd-sync-video {
-        .apd-check-on {
-            display: none;
-        }
-
-        .apd-check-off {
-            display: block;
-        }
-    }
-}
-
-[data-danmuku-sync-video='true'] {
-    .apd-sync-video {
-        .apd-check-on {
-            display: block;
-        }
-
-        .apd-check-off {
-            display: none;
         }
     }
 }

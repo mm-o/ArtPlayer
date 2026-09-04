@@ -19,10 +19,6 @@ export default function danmakuMix(art) {
     let config = {};
     let token = 0;
 
-    def(art, 'danmaku', { get: () => items });
-    def(art, 'danmakuTracks', { get: () => tracks });
-    def(art, 'activeDanmakuTracks', { get: () => active });
-    def(art, 'danmakuSources', { get: () => sources });
     def(art, 'getDanmaku', { value: () => items.slice() });
     def(art, 'getDanmakuTracks', { value: () => tracks.slice() });
     def(art, 'getActiveDanmakuTracks', { value: () => active.slice() });

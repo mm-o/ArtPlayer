@@ -96,9 +96,7 @@ export default function mediaMix(art) {
             applyStartTime(art, media);
 
             if (typeof art.setSubtitles === 'function') await art.setSubtitles(media.subtitles || []);
-            if (typeof art.setDanmakuTracks === 'function') await art.setDanmakuTracks(
-                media.danmakuTracks || (media.danmaku?.length ? [{ id: 'media', name: 'Media', items: media.danmaku, default: true }] : []),
-            );
+            if (typeof art.setDanmakuTracks === 'function') await art.setDanmakuTracks(media.danmakuTracks || []);
             if (typeof art.setAudioTracks === 'function') art.setAudioTracks(media.audioTracks || []);
 
             if (typeof art.play === 'function') {

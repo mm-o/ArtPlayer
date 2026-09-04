@@ -36,9 +36,8 @@ export default function subtitleMix(art) {
 
     def(art, 'installSubtitlePanel', { value: () => installSubtitlePanel(art) });
     def(art, 'createSourceBrowser', { value: (option) => createSourceBrowser(art, option) });
-    def(art, 'subtitleTracks', { get: () => tracks });
-    def(art, 'activeSubtitleTracks', { get: () => active });
-    def(art, 'subtitleSources', { get: () => sources });
+    def(art, 'getSubtitles', { value: () => tracks.slice() });
+    def(art, 'getActiveSubtitles', { value: () => active.slice() });
     def(art, 'getSubtitleSources', { value: () => [...sources] });
     def(art, 'getSubtitleCues', {
         value: () => art.subtitle.cues.map((cue) => ({

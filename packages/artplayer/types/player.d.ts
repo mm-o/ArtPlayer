@@ -92,14 +92,7 @@ export declare class Player {
     get thumbnails(): Thumbnails;
     set thumbnails(thumbnails: Thumbnails);
     readonly currentMedia: ArtplayerMedia | null;
-    readonly subtitleTracks: ArtplayerMediaSubtitleTrack[];
-    readonly activeSubtitleTracks: ArtplayerMediaSubtitleTrack[];
-    readonly subtitleSources: import('./subtitle').SubtitleSource[];
     createSourceBrowser(option: Record<string, any>): Record<string, any>;
-    readonly danmaku: ArtplayerMediaDanmakuItem[];
-    readonly danmakuTracks: import('./media').ArtplayerMediaDanmakuTrack[];
-    readonly activeDanmakuTracks: import('./media').ArtplayerMediaDanmakuTrack[];
-    readonly danmakuSources: ArtplayerDanmakuSource[];
     readonly audioTracks: ArtplayerMediaAudioTrack[];
     readonly loopSegment: LoopSegment | null;
     readonly playlist: ArtplayerPlaylist & { items: ArtplayerMedia[] };
@@ -112,6 +105,8 @@ export declare class Player {
     updateQuality(quality?: quality[]): quality[];
     getSubtitleConfig(): Record<string, any>;
     setSubtitleConfig(config?: Record<string, any>): Record<string, any>;
+    getSubtitles(): ArtplayerMediaSubtitleTrack[];
+    getActiveSubtitles(): ArtplayerMediaSubtitleTrack[];
     getSubtitleCues(): Array<{ time: number; endTime?: number; text: string }>;
     getSubtitleSources(): import('./subtitle').SubtitleSource[];
     setSubtitleSources(sources?: import('./subtitle').SubtitleSource[]): import('./subtitle').SubtitleSource[];

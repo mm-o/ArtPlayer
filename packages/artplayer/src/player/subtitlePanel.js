@@ -1,4 +1,4 @@
-import { append, query } from '../utils';
+import { append, query } from '../utils/dom.js';
 import { def } from '../utils/property.js';
 import { sameSubtitle } from './subtitleTrack.js';
 
@@ -110,20 +110,21 @@ export default function installSubtitlePanel(art) {
                 $tracks.innerHTML = '';
                 createCheck(i18n.get('Subtitle'), art.subtitle.show);
                 const groups = new Map();
-                art.subtitleTracks.forEach((track, index) => {
+                const active = art.getActiveSubtitles();
+                art.getSubtitles().forEach((track, index) => {
                     const source = track.source || 'media';
                     if (!groups.has(source)) groups.set(source, []);
                     groups.get(source).push([track, index]);
                 });
                 groups.forEach((tracks, source) => {
                     append($tracks, '<div class="apd-subtitle-source"></div>').textContent = i18n.get(SOURCE_LABELS[source] || 'Subtitle');
-                    tracks.forEach(([track, index]) => createCheck(track.name || track.lang || i18n.get('Subtitle'), art.activeSubtitleTracks.some((item) => sameSubtitle(item, track)), index));
+                    tracks.forEach(([track, index]) => createCheck(track.name || track.lang || i18n.get('Subtitle'), active.some((item) => sameSubtitle(item, track)), index));
                 });
                 $control.style.display = '';
             };
             const renderSources = () => {
                 $sources.innerHTML = '';
-                [['local', i18n.get('Local Subtitle')], ...art.subtitleSources.map((source, index) => [index, source.name || i18n.get('Subtitle')])].forEach(([value, label]) => {
+                [['local', i18n.get('Local Subtitle')], ...art.getSubtitleSources().map((source, index) => [index, source.name || i18n.get('Subtitle')])].forEach(([value, label]) => {
                     const $button = append($sources, '<button type="button" data-subtitle-source></button>');
                     $button.dataset.subtitleSource = value;
                     $button.textContent = label;
@@ -137,23 +138,22 @@ export default function installSubtitlePanel(art) {
                 if ($visible) $visible.checked = art.subtitle.show;
             };
             def(art, 'openSubtitleSource', {
-                value(source) {
-                    return picker.open(source === 'local' ? 'local' : typeof source === 'string' ? art.subtitleSources.find((item) => item.name === source) : source);
-                },
+                value: (source) => picker.open(source, art.getSubtitleSources()),
             });
             art.proxy($host, 'click', async (event) => {
                 const source = event.target.closest('[data-subtitle-source]');
-                if (source) return picker.open(source.dataset.subtitleSource === 'local' ? 'local' : art.subtitleSources[Number(source.dataset.subtitleSource)]);
+                if (source) return art.openSubtitleSource(source.dataset.subtitleSource);
                 const check = event.target.closest('[data-subtitle-index]');
                 if (!check) return;
                 event.preventDefault();
                 const index = Number(check.dataset.subtitleIndex);
                 if (index < 0) art.setSubtitleConfig({ visible: !art.subtitle.show });
                 else {
-                    const track = art.subtitleTracks[index];
-                    await art.selectSubtitleTracks(art.activeSubtitleTracks.some((item) => sameSubtitle(item, track))
-                        ? art.activeSubtitleTracks.filter((item) => !sameSubtitle(item, track))
-                        : [...art.activeSubtitleTracks, track]);
+                    const track = art.getSubtitles()[index];
+                    const active = art.getActiveSubtitles();
+                    await art.selectSubtitleTracks(active.some((item) => sameSubtitle(item, track))
+                        ? active.filter((item) => !sameSubtitle(item, track))
+                        : [...active, track]);
                 }
             });
             art.proxy($control, 'click', () => {
