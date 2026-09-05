@@ -101,7 +101,7 @@ export default function installSubtitlePanel(art) {
                 picker.position();
             }
             const createCheck = (label, checked, index = -1) => {
-                const $item = append($tracks, '<label class="apd-other" data-subtitle-index><input class="apd-check" type="checkbox"><span></span></label>');
+                const $item = append($tracks, '<label class="apd-other" data-subtitle-index><input class="art-checkbox apd-check" type="checkbox"><span></span></label>');
                 $item.dataset.subtitleIndex = index;
                 query('.apd-check', $item).checked = checked;
                 query('span', $item).textContent = label;

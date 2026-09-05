@@ -59,7 +59,7 @@ export default function createSourceBrowser(art, option) {
                     $row.dataset.sourceFolder = index;
                     query('span', $row).textContent = item.name || item.title || '';
                 } else if (item?.url || item?.file) {
-                    const $row = append($list, '<label class="art-source-browser-row"><input type="checkbox" data-source-item><span></span></label>');
+                    const $row = append($list, '<label class="art-source-browser-row"><input class="art-checkbox" type="checkbox" data-source-item><span></span></label>');
                     query('input', $row).dataset.sourceItem = index;
                     query('input', $row).checked = selected.has(keyOf(item));
                     query('span', $row).textContent = item.name || item.title || '';
