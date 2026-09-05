@@ -50,3 +50,8 @@ test('loads and caches each external danmaku source once', async () => {
     assert.deepEqual(await loadDanmakuSource(source, fetcher), [{ text: 'Once', time: 1, mode: 0, color: '#ffffff', fontSize: 25 }]);
     assert.equal(requests, 1);
 });
+
+test('passes already normalized danmaku items through unchanged', async () => {
+    const items = [{ text: 'Bilibili', time: 1, mode: 0, color: '#ffffff', fontSize: 25 }];
+    assert.strictEqual((await loadDanmakuSource({ items })), items);
+});

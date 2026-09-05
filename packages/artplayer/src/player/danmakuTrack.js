@@ -66,7 +66,7 @@ export function loadDanmakuSource(source, fetcher = fetch) {
     if (!source || typeof source !== 'object') return Promise.resolve([]);
     if (cache.has(source)) return cache.get(source);
     const task = (async () => {
-        if (Array.isArray(source.items)) return source.items.map(normalizeDanmaku).filter(Boolean);
+        if (Array.isArray(source.items)) return source.items;
         const text = source.file ? await source.file.text() : source.data ?? await (await fetcher(source.url)).text();
         const type = source.type || source.file?.name?.split('.').pop() || String(source.url || '').split(/[?#]/)[0].split('.').pop();
         return parseDanmaku(text, type);
@@ -99,5 +99,5 @@ export function pickDanmakuSources(sources = [], option = {}) {
 }
 
 export function mergeDanmakuSources(sources = []) {
-    return sources.flatMap((source) => toArray(source.items)).sort((a, b) => a.time - b.time);
+    return sources.flatMap((source) => Array.isArray(source) ? source : toArray(source.items)).sort((a, b) => a.time - b.time);
 }

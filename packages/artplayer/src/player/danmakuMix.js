@@ -37,9 +37,10 @@ export default function danmakuMix(art) {
             const selected = uniqueDanmakuSources(toArray(value).map((track) => tracks.find((item) => sameDanmakuSource(item, track)) || track));
             const previous = active;
             active = selected;
-            let loaded;
             try {
-                loaded = await Promise.all(selected.map(async (track) => ({ ...track, items: await loadDanmakuSource(track) })));
+                const loaded = await Promise.all(selected.map((track) => loadDanmakuSource(track)));
+                if (current !== token) return items;
+                items = loaded.length > 1 ? mergeDanmakuSources(loaded) : loaded[0] || [];
             } catch (error) {
                 if (current === token) {
                     active = previous;
@@ -48,7 +49,6 @@ export default function danmakuMix(art) {
                 return items;
             }
             if (current !== token) return items;
-            items = mergeDanmakuSources(loaded);
             await plugin(art)?.replace?.(items);
             art.emit('danmaku:change', items, tracks);
             return items;

@@ -50,3 +50,10 @@ test('keeps rapid source selections while a track is loading', async () => {
     assert.deepEqual(art.getActiveDanmakuTracks(), [bilibili, local, cloud]);
     assert.deepEqual(art.getDanmaku().map((item) => item.text), ['L', 'B', 'C']);
 });
+
+test('uses a single loaded track without merging it again', async () => {
+    const { art } = createArt();
+    const items = [{ text: 'B', time: 2 }];
+    await art.setDanmakuTracks([{ id: 'bilibili', items, default: true }]);
+    assert.strictEqual(art.getDanmaku()[0], items[0]);
+});
