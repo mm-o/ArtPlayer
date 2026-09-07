@@ -82,7 +82,12 @@ export default function thumbnailsMix(art) {
         if (type === 'hover' || isMobileDroging) {
             if (!loading) {
                 loading = true;
-                image = await loadImg(url, scale);
+                try {
+                    image = await loadImg(url, scale);
+                } catch {
+                    loading = false;
+                    return;
+                }
                 isLoad = true;
             }
 
@@ -113,6 +118,13 @@ export default function thumbnailsMix(art) {
             return art.option.thumbnails;
         },
         set(thumbnails) {
+            if (typeof thumbnails === 'string') {
+                thumbnails = {
+                    ...art.option.thumbnails,
+                    url: thumbnails,
+                };
+            }
+
             if (!thumbnails?.url || art.option.isLive) {
                 art.option.thumbnails = {
                     url: '',

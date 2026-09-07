@@ -90,7 +90,7 @@ export declare class Player {
     set quality(quality: quality[]);
     readonly qualities: quality[];
     get thumbnails(): Thumbnails;
-    set thumbnails(thumbnails: Thumbnails);
+    set thumbnails(thumbnails: Thumbnails | string);
     readonly currentMedia: ArtplayerMedia | null;
     createSourceBrowser(option: Record<string, any>): Record<string, any>;
     readonly audioTracks: ArtplayerMediaAudioTrack[];
