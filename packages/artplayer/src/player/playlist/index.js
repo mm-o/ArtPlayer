@@ -304,6 +304,21 @@ export default function playlistMix(art) {
         },
     });
 
+    def(art, 'clearPlaylistFavorites', {
+        async value() {
+            playlist.favorites = [];
+            playlist.favoritesRoots = [];
+
+            if (typeof playlist.onClearFavorites === 'function') {
+                await playlist.onClearFavorites(playlist);
+            }
+
+            art.emit('playlist:favorite:clear', playlist);
+            emitChange('favorite:clear', playlist);
+            return playlist.favorites;
+        },
+    });
+
     if (art.template?.$playlist && art.events?.proxy) {
         art.events.proxy(art.template.$playlist, 'click', async (event) => {
             const target = event.target;
@@ -331,6 +346,9 @@ export default function playlistMix(art) {
                     break;
                 case 'clear-history':
                     await art.clearPlaylistHistory();
+                    break;
+                case 'clear-favorites':
+                    await art.clearPlaylistFavorites();
                     break;
                 case 'toggle-node':
                     if (node?.dataset?.id) {

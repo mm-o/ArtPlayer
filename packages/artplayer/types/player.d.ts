@@ -153,6 +153,7 @@ export declare class Player {
     playlistToggleNode(id: string): Promise<ArtplayerPlaylistNode | null>;
     togglePlaylistFavorite(id: string): Promise<boolean>;
     clearPlaylistHistory(): Promise<ArtplayerMedia[]>;
+    clearPlaylistFavorites(): Promise<ArtplayerMedia[]>;
     pause(): void;
     play(): Promise<void>;
     toggle(): void;

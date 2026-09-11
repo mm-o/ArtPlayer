@@ -78,7 +78,7 @@ function renderNode(node, current, level = 0) {
     `;
 }
 
-function renderCollection(name, items, roots, current, i18n, clearable = false) {
+function renderCollection(name, items, roots, current, i18n, clearAction = '') {
     const body = roots.length
         ? roots.map((node) => renderNode(node, current)).join('')
         : items.map((item, index) => renderNode(renderItemNode(item, index), current)).join('');
@@ -87,7 +87,7 @@ function renderCollection(name, items, roots, current, i18n, clearable = false) 
         <section class="art-playlist-group is-expanded">
             <div class="art-playlist-group-title">
                 <span>${name}</span>
-                ${clearable ? `<button data-action="clear-history" data-tooltip="Clear">${i18n.get('Clear')}</button>` : ''}
+                ${clearAction ? `<button data-action="${clearAction}" data-tooltip="Clear">${i18n.get('Clear')}</button>` : ''}
             </div>
             <div class="art-playlist-group-items">
                 ${body || `<div class="art-playlist-empty">${i18n.get('Empty')}</div>`}
@@ -115,9 +115,9 @@ export function renderPlaylist(art, page = 'playlist') {
     const markedHistory = playlist.history.map(markFavorite);
     const body =
         page === 'favorites'
-            ? renderCollection(i18n.get('Favorites'), markedFavorites, markedFavoritesRoots, currentPlaylistItem, i18n)
+              ? renderCollection(i18n.get('Favorites'), markedFavorites, markedFavoritesRoots, currentPlaylistItem, i18n, 'clear-favorites')
             : page === 'history'
-              ? renderCollection(i18n.get('History'), markedHistory, markedHistoryRoots, currentPlaylistItem, i18n, true)
+              ? renderCollection(i18n.get('History'), markedHistory, markedHistoryRoots, currentPlaylistItem, i18n, 'clear-history')
               : `${markedGroups.map((group) => renderGroup(group, currentPlaylistItem)).join('')}
                  ${markedRoots.map((node) => renderNode(node, currentPlaylistItem)).join('')}`;
 
