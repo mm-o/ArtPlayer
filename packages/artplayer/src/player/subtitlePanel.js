@@ -156,12 +156,28 @@ export default function installSubtitlePanel(art) {
                         : [...active, track]);
                 }
             });
+            // Match the danmaku panel: hover opens, leaving the control or panel closes.
+            // The gap between the control and the panel needs a short grace period.
+            let closeTimer = 0;
+            const openPanel = () => {
+                clearTimeout(closeTimer);
+                setOpen(true);
+            };
+            const closePanel = () => {
+                clearTimeout(closeTimer);
+                closeTimer = setTimeout(() => {
+                    if (!picker.opened) setOpen(false);
+                }, 120);
+            };
             art.proxy($control, 'click', () => {
                 if ($host.classList.contains('apd-subtitle-open')) picker.close(), setOpen(false);
                 else setOpen(true);
             });
-            art.proxy($control, 'mouseenter', () => setOpen(true));
-            art.proxy($host, 'mouseleave', () => !picker.opened && setOpen(false));
+            art.proxy($control, 'mouseenter', openPanel);
+            art.proxy($control, 'mouseleave', closePanel);
+            art.proxy($host, 'mouseenter', openPanel);
+            art.proxy($host, 'mouseleave', closePanel);
+            art.once('destroy', () => clearTimeout(closeTimer));
             art.on('resize', position);
             art.on('subtitle:change', renderTracks);
             art.on('subtitle:sources', renderSources);
